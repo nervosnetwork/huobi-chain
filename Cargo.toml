@@ -5,13 +5,11 @@ authors = ["Muta Dev <muta@nervos.org>"]
 edition = "2018"
 
 [dependencies]
-muta = { git = "https://github.com/nervosnetwork/muta", rev = "417bfa85" }
-protocol = { git = "https://github.com/nervosnetwork/muta", rev = "417bfa85", package = "muta-protocol" }
+muta = { git = "https://github.com/nervosnetwork/muta", rev = "92bdf2d" }
+protocol = { git = "https://github.com/nervosnetwork/muta", rev = "92bdf2d", package = "muta-protocol" }
 
-tokio = { version = "0.2", features = ["macros", "rt-core"]}
 derive_more = "0.15"
-runtime = "0.3.0-alpha.7"
-runtime-tokio = "0.3.0-alpha.6"
+tokio = { version = "0.2", features = ["macros", "rt-core", "rt-util"]}
 clap = "2.33"
 
 metadata = { path = "services/metadata" }
