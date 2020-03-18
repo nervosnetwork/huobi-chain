@@ -82,6 +82,10 @@ e2e-test:
 e2e-test-via-docker:
 	docker-compose -f tests/e2e/docker-compose-e2e-test.yaml up --exit-code-from e2e-test --force-recreate
 
+change-validator-test-via-docker:
+	cd tests/e2e && yarn run ts-node change_validators/create_configs.ts
+	docker-compose -f tests/e2e/change_validators/configs/docker-compose.yml up --exit-code-from change-validators-test --force-recreate --remove-orphans
+
 # For riscv service
 TARGET := riscv64-unknown-elf
 CC := $(TARGET)-gcc
