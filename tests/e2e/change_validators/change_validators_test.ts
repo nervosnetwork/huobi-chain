@@ -97,9 +97,9 @@ async function main() {
   for (const i of _.range(init_bp_num - 1, 0)) {
     await changeAndCheckValidators(_.range(i));
   }
-  // for (const i of _.range(1, init_node_num+1, 1)) {
-  //     await changeAndCheckValidators(_.range(i));
-  // }
+  for (const i of _.range(1, init_node_num+1, 1)) {
+      await changeAndCheckValidators(_.range(i));
+  }
   const nodes = _.range(init_node_num);
   for (const i of _.range(50)) {
     const randomNodes = _.sampleSize(nodes, _.random(1, init_node_num));
