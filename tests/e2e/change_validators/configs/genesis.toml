@@ -1,0 +1,78 @@
+timestamp = 0
+prevhash = "0x44915be5b6c20b0678cf05fcddbbaa832e25d7e6ac538784cd5c24de00d47472"
+
+[[services]]
+name = "asset"
+payload = '''
+{
+    "id": "0xf56924db538e77bb5951eb5ff0d02b88983c49c45eea30e8ae3e7234b311436c",
+    "name": "Muta Token",
+    "symbol": "MT",
+    "supply": 1000000000,
+    "precision": 8,
+    "issuer": "0xcff1002107105460941f797828f468667aa1a2db",
+    "fee": 0,
+    "fee_account": "0x0000000000000000000000000000000000000000"
+}
+'''
+
+[[services]]
+name = "metadata"
+payload = '''
+{
+    "chain_id": "0xb6a4d7da21443f5e816e8700eea87610e6d769657d6b8ec73028457bf2ca4036",
+    "common_ref": "0x7755657133524b63316e",
+    "timeout_gap": 20000,
+    "cycles_limit": 999999999999,
+    "cycles_price": 1,
+    "interval": 1000,
+    "verifier_list": [
+    
+        {
+            "bls_pub_key": "0x04107c03e3116490c2e915ec1fe5d4aa4cd2cc54b3a5b140bda5fefb175a4ee54ca45e6a04d9a83fa0dafa29ce9dc16b77098db74b515191df214973f6c69a58be6b59e36dc07543c97df1c5a73414ea1c8144b388f63adc808143d7867296b616",
+            "address": "0xd173bf3eff56631200c54f83d52f4323fb7c9c9d",
+            "propose_weight": 1,
+            "vote_weight": 1
+        },
+    
+        {
+            "bls_pub_key": "0x0406ecf890898f65b33b0fe6735da5d9a9cfc473bd092e682458d2fef6a2f45c4bc4ef8f53ef97da3ad8da4633dc65f16b19a5e747305460bd7fb0699d54afaa264305016751a39c8438d4d6024efea36841cd084d42ba2712ef7d2b6f63d9caa9",
+            "address": "0xf28f6cbaf324a694e6ef392b7157f26b454ef543",
+            "propose_weight": 1,
+            "vote_weight": 1
+        },
+    
+        {
+            "bls_pub_key": "0x0404b81b13cb46d4fe9cfa8fe9b1311a79337cd5f4ebf39fc97ce7e41c7f0e3341e894bc6bb656f837e1fd91221967969210e04f0235e1da25f885ece978a234b06e14510ddf6e5f87b19e11c07c2256eca86feb67ec0efc8086ec5ff21e9c4010",
+            "address": "0xfd752ba582c5b1c8779df4bb0e79a0abe8ba17ed",
+            "propose_weight": 1,
+            "vote_weight": 1
+        }
+    
+    ],
+    "propose_ratio": 15,
+    "prevote_ratio": 10,
+    "precommit_ratio": 10,
+    "brake_ratio": 7,
+    "tx_num_limit": 20000,
+    "max_tx_size": 30000
+}
+'''
+
+[[services]]
+name = "node_manager"
+# private key of 0xcff1002107105460941f797828f468667aa1a2db:
+# 2b672bb959fa7a852d7259b129b65aee9c83b39f427d6f7bded1f58c4c9310c2
+payload = '{"admin": "0xcff1002107105460941f797828f468667aa1a2db"}'
+
+[[services]]
+name = 'riscv'
+# private key of 0x9cccacbb8a4b0353d42138613b2db72d6a661cf4:
+# d6ef93ed5d27327fd10349a75d3b7a91aa5c1d0f42994be10c1cb0e357e722f5
+payload = '''
+{
+    "admins": ["0xcff1002107105460941f797828f468667aa1a2db"],
+    "enable_whitelist": true,
+    "whitelist": ["0x9cccacbb8a4b0353d42138613b2db72d6a661cf4"]
+}
+'''

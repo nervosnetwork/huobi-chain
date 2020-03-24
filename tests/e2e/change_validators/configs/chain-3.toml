@@ -1,0 +1,61 @@
+# crypto
+privkey = "0xa4f6470de1b139a3d49a1da8214db1d09bd38c31e46e7bc7295937ba48ca973c"
+
+# db config
+data_path = "./data"
+
+[graphql]
+listening_address = "0.0.0.0:8000"
+graphql_uri = "/graphql"
+graphiql_uri = "/graphiql"
+workers = 0 # if 0, uses number of available logical cpu as threads count.
+maxconn = 25000
+
+[network]
+listening_address = "0.0.0.0:1337"
+rpc_timeout = 10
+
+
+
+[[network.bootstraps]]
+pubkey = "0x036fa6cd4b746c18a1b80f68396c86a87a1e237f4cb280291c5f54cd1d5e2f245f"
+address = "173.20.0.21:1337"
+
+
+
+[[network.bootstraps]]
+pubkey = "0x0231f6db0606fa5d9a774330038d899e01e43c1f3bc417b9a5438917050c24c972"
+address = "173.20.0.22:1337"
+
+
+
+
+
+[[network.bootstraps]]
+pubkey = "0x02187bc166e4b4ee39daa2d6810894bae5edacc4b33cc424247850ba6e82d7a3d3"
+address = "173.20.0.24:1337"
+
+
+
+[[network.bootstraps]]
+pubkey = "0x03eba0be213b1517a4ff050155678fa33ae2e68af46d3bbac9dc8e80d8a667e76c"
+address = "173.20.0.25:1337"
+
+
+
+[mempool]
+pool_size = 20000
+broadcast_txs_size = 200
+broadcast_txs_interval = 200
+
+[executor]
+light = false
+
+[logger]
+filter = "info"
+log_to_console = true
+console_show_file_and_line = false
+log_path = "./logs"
+log_to_file = true
+metrics = true
+modules_level = { riscv_debug = "debug" }

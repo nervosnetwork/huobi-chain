@@ -1,0 +1,154 @@
+version: '2'
+
+services:
+
+  bft_node1:
+    container_name: bft_node1
+    image: huobi:latest
+    hostname: bft_node1
+    environment:
+      - RUST_LOG
+      - RUST_BACKTRACE
+    volumes:
+      - ./chain-1.toml:/app/config/chain.toml
+      - ./genesis.toml:/app/config/genesis.toml
+      # - ../../../../target/tests/change_validators/data/1:/app/data
+      # - ../../../../target/tests/change_validators/logs/1:/app/logs
+    # ports:
+    #   - 8001:8000
+    networks:
+      bft:
+        aliases:
+          - bft_node1
+        ipv4_address: 173.20.0.21
+    command: |
+      sh -c '
+      cd /app;
+      ./huobi-chain;'
+
+  bft_node2:
+    container_name: bft_node2
+    image: huobi:latest
+    hostname: bft_node2
+    environment:
+      - RUST_LOG
+      - RUST_BACKTRACE
+    volumes:
+      - ./chain-2.toml:/app/config/chain.toml
+      - ./genesis.toml:/app/config/genesis.toml
+      # - ../../../../target/tests/change_validators/data/2:/app/data
+      # - ../../../../target/tests/change_validators/logs/2:/app/logs
+    # ports:
+    #   - 8002:8000
+    networks:
+      bft:
+        aliases:
+          - bft_node2
+        ipv4_address: 173.20.0.22
+    command: |
+      sh -c '
+      cd /app;
+      ./huobi-chain;'
+
+  bft_node3:
+    container_name: bft_node3
+    image: huobi:latest
+    hostname: bft_node3
+    environment:
+      - RUST_LOG
+      - RUST_BACKTRACE
+    volumes:
+      - ./chain-3.toml:/app/config/chain.toml
+      - ./genesis.toml:/app/config/genesis.toml
+      # - ../../../../target/tests/change_validators/data/3:/app/data
+      # - ../../../../target/tests/change_validators/logs/3:/app/logs
+    # ports:
+    #   - 8003:8000
+    networks:
+      bft:
+        aliases:
+          - bft_node3
+        ipv4_address: 173.20.0.23
+    command: |
+      sh -c '
+      cd /app;
+      ./huobi-chain;'
+
+  bft_node4:
+    container_name: bft_node4
+    image: huobi:latest
+    hostname: bft_node4
+    environment:
+      - RUST_LOG
+      - RUST_BACKTRACE
+    volumes:
+      - ./chain-4.toml:/app/config/chain.toml
+      - ./genesis.toml:/app/config/genesis.toml
+      # - ../../../../target/tests/change_validators/data/4:/app/data
+      # - ../../../../target/tests/change_validators/logs/4:/app/logs
+    # ports:
+    #   - 8004:8000
+    networks:
+      bft:
+        aliases:
+          - bft_node4
+        ipv4_address: 173.20.0.24
+    command: |
+      sh -c '
+      cd /app;
+      ./huobi-chain;'
+
+  bft_node5:
+    container_name: bft_node5
+    image: huobi:latest
+    hostname: bft_node5
+    environment:
+      - RUST_LOG
+      - RUST_BACKTRACE
+    volumes:
+      - ./chain-5.toml:/app/config/chain.toml
+      - ./genesis.toml:/app/config/genesis.toml
+      # - ../../../../target/tests/change_validators/data/5:/app/data
+      # - ../../../../target/tests/change_validators/logs/5:/app/logs
+    # ports:
+    #   - 8005:8000
+    networks:
+      bft:
+        aliases:
+          - bft_node5
+        ipv4_address: 173.20.0.25
+    command: |
+      sh -c '
+      cd /app;
+      ./huobi-chain;'
+
+  change-validators-test:
+    image: node:10.15
+    depends_on:
+      - bft_node1
+    working_dir: /app/tests/e2e
+    volumes:
+      - ../../../..:/app
+      - ../../../../target/tests/e2e/node_modules:/app/tests/e2e/node_modules
+    networks:
+      bft:
+        aliases:
+          - change-validators-test
+        ipv4_address: 173.20.0.19
+    environment:
+      - ENDPOINT=http://173.20.0.21:8000/graphql
+    command:
+      - /bin/sh
+      - -c
+      - |
+        cd /app/tests/e2e
+        npm install
+        chmod +x ./wait-for-it.sh
+        ./wait-for-it.sh -t 7200 bft_node1:8000 -- yarn run ts-node change_validators/change_validators_test.ts
+
+
+networks:
+  bft:
+    ipam:
+     config:
+       - subnet: 173.20.0.0/24

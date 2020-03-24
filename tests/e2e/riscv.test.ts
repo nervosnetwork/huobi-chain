@@ -6,7 +6,7 @@ import {
   accounts,
   admin,
   str2hex,
-  fee_asset_id,
+  fee_asset_id
 } from "./utils";
 import { add_fee_token_to_accounts, getBalance, transfer } from "./helper";
 import { readFileSync } from "fs";
@@ -218,7 +218,7 @@ describe("riscv service", () => {
     const transfer_receipt = await transfer(admin, fee_asset_id, addr, amount);
     b = await getBalance(fee_asset_id, addr);
     expect(JSON.parse(b.ret).balance).toBe(10000);
-    const to_addr = '0x0000000000000000000000000000000000000001';
+    const to_addr = "0x0000000000000000000000000000000000000001";
     b = await getBalance(fee_asset_id, to_addr);
     const to_balance_before = JSON.parse(b.ret).balance;
     // transfer 100 from contract to to_addr via contract

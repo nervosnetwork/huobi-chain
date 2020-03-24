@@ -14,8 +14,8 @@ services:
       - ./genesis.toml:/app/config/genesis.toml
       # - ../../../../target/tests/change_validators/data/<%= k.index %>:/app/data
       # - ../../../../target/tests/change_validators/logs/<%= k.index %>:/app/logs
-    ports:
-      - <%= k.index + 8000 %>:8000
+    # ports:
+    #   - <%= k.index + 8000 %>:8000
     networks:
       bft:
         aliases:
