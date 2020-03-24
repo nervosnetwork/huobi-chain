@@ -109,5 +109,3 @@ async function main() {
 }
 
 main();
-
-// function getValidators()

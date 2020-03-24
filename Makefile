@@ -83,7 +83,7 @@ e2e-test-via-docker:
 	docker-compose -f tests/e2e/docker-compose-e2e-test.yaml up --exit-code-from e2e-test --force-recreate
 
 change-validator-test-via-docker:
-	@echo "if you changed the binary code, you may want to run `docker-build` first"
+	@echo "if you changed the binary code, you may want to run `make docker-build` first"
 	cd tests/e2e && npm i && npx ts-node change_validators/create_configs.ts
 	docker-compose -f tests/e2e/change_validators/configs/docker-compose.yml up --exit-code-from change-validators-test --force-recreate --remove-orphans
 
