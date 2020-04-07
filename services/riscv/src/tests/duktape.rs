@@ -104,7 +104,7 @@ fn should_support_pvm_load_args() {
 
     let ret = service.exec(context.make(), payload).expect("load args");
 
-    assert_eq!(ret, args);
+    assert_eq!(ret.0, args);
 }
 
 #[test]
@@ -118,7 +118,7 @@ fn should_support_pvm_load_json_args() {
         .exec(context.make(), payload)
         .expect("load jsonn args");
 
-    assert_eq!(ret, args);
+    assert_eq!(ret.0, args);
 }
 
 #[test]
@@ -132,7 +132,7 @@ fn should_support_pvm_cycle_limit() {
         .exec(context.make(), payload)
         .expect("load cycle limit");
 
-    assert_eq!(ret.parse::<u64>().expect("cycle limit"), CYCLE_LIMIT);
+    assert_eq!(ret.0.parse::<u64>().expect("cycle limit"), CYCLE_LIMIT);
 }
 
 #[test]
@@ -146,7 +146,7 @@ fn should_support_pvm_cycle_used() {
     let ret = service.exec(ctx, payload).expect("load cycle used");
 
     // Hardcode in context make
-    assert_eq!(ret.parse::<u64>().expect("cycle used"), 3);
+    assert_eq!(ret.0.parse::<u64>().expect("cycle used"), 3);
 }
 
 #[test]
@@ -160,7 +160,7 @@ fn should_support_pvm_cycle_price() {
     let ret = service.exec(ctx, payload).expect("load cycle price");
 
     // Hardcode in context make
-    assert_eq!(ret.parse::<u64>().expect("cycle price"), 1);
+    assert_eq!(ret.0.parse::<u64>().expect("cycle price"), 1);
 }
 
 #[test]
@@ -172,7 +172,7 @@ fn should_support_pvm_caller() {
 
     let ret = service.exec(context.make(), payload).expect("load caller");
 
-    assert_eq!(ret, CALLER);
+    assert_eq!(ret.0, CALLER);
 }
 
 #[test]
@@ -209,7 +209,7 @@ fn should_support_pvm_origin() {
         origin: String,
     }
 
-    let ret: ExpectRet = serde_json::from_str(&ret).expect("decode test origin ret");
+    let ret: ExpectRet = serde_json::from_str(&ret.0).expect("decode test origin ret");
     assert_eq!(ret.caller, address.as_hex());
     assert_eq!(ret.origin, CALLER);
 }
@@ -223,7 +223,7 @@ fn should_support_pvm_address() {
 
     let ret = service.exec(context.make(), payload).expect("load address");
 
-    assert_eq!(ret, address.as_hex());
+    assert_eq!(ret.0, address.as_hex());
 }
 
 #[test]
@@ -239,7 +239,7 @@ fn should_support_pvm_block_height() {
         .expect("load block height");
 
     assert_eq!(
-        ret.parse::<u64>().expect("block height"),
+        ret.0.parse::<u64>().expect("block height"),
         ctx.get_current_height()
     );
 }
@@ -255,7 +255,7 @@ fn should_support_pvm_extra() {
         .exec(context.make(), payload)
         .expect("test no extra");
 
-    assert_eq!(ret, "no extra");
+    assert_eq!(ret.0, "no extra");
 
     // Should return extra data
     let extra = "final mixed ??? no !!!";
@@ -268,7 +268,7 @@ fn should_support_pvm_extra() {
 
     let ret = service.exec(ctx, payload).expect("test extra");
 
-    assert_eq!(ret, extra);
+    assert_eq!(ret.0, extra);
 }
 
 #[test]
@@ -288,7 +288,10 @@ fn should_support_pvm_timestamp() {
     let ctx = ServiceContext::new(ctx_params);
 
     let ret = service.exec(ctx.clone(), payload).expect("load timestamp");
-    assert_eq!(ret.parse::<u64>().expect("timestamp"), ctx.get_timestamp());
+    assert_eq!(
+        ret.0.parse::<u64>().expect("timestamp"),
+        ctx.get_timestamp()
+    );
 }
 
 #[test]
@@ -301,7 +304,7 @@ fn should_support_pvm_emit_event() {
 
     let ctx = context.make();
     let ret = service.exec(ctx.clone(), payload).expect("emit event");
-    assert_eq!(ret, "emit success");
+    assert_eq!(ret.0, "emit success");
 
     let events = ctx.get_events();
     assert!(events.iter().any(|ev| ev.data == msg));
@@ -318,7 +321,7 @@ fn should_support_pvm_tx_hash() {
     let ret = service.exec(ctx.clone(), payload).expect("test tx hash");
 
     assert_eq!(
-        Some(ret),
+        Some(ret.0),
         ctx.get_tx_hash().map(|h| h.as_hex()),
         "should return tx hash"
     );
@@ -333,7 +336,7 @@ fn should_support_pvm_tx_hash() {
 
     let ret = service.exec(ctx, payload).expect("test no tx hash");
 
-    assert_eq!(ret, "no tx hash");
+    assert_eq!(ret.0, "no tx hash");
 }
 
 #[test]
@@ -346,7 +349,7 @@ fn should_support_pvm_tx_nonce() {
     let ctx = context.make();
     let ret = service.exec(ctx, payload).expect("tx no nonce");
 
-    assert_eq!(ret, "no tx nonce");
+    assert_eq!(ret.0, "no tx nonce");
 
     // Should return tx nonce
     let mut ctx_params = context.new_params();
@@ -358,7 +361,7 @@ fn should_support_pvm_tx_nonce() {
 
     let ret = service.exec(ctx.clone(), payload).expect("test tx nonce");
 
-    assert_eq!(Some(ret), ctx.get_nonce().map(|n| n.as_hex()));
+    assert_eq!(Some(ret.0), ctx.get_nonce().map(|n| n.as_hex()));
 }
 
 #[test]
@@ -376,7 +379,7 @@ fn should_support_pvm_storage() {
 
     let ret = service.exec(context.make(), payload).expect("load storage");
 
-    let ret: Carmen = serde_json::from_str(&ret).expect("get json storage");
+    let ret: Carmen = serde_json::from_str(&ret.0).expect("get json storage");
 
     assert_eq!(ret.color, "red");
 }
@@ -409,7 +412,7 @@ fn should_support_pvm_contract_call() {
         .exec(context.make(), payload)
         .expect("exec contract call");
 
-    assert_eq!(ret, "self");
+    assert_eq!(ret.0, "self");
 }
 
 #[test]
@@ -449,5 +452,5 @@ fn should_support_pvm_service_call() {
         .exec(context.make(), payload)
         .expect("exec service call");
 
-    assert_eq!(ret, "self");
+    assert_eq!(ret.0, "self");
 }

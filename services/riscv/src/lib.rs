@@ -15,7 +15,7 @@ use protocol::{Bytes, BytesMut, ProtocolError, ProtocolErrorKind, ProtocolResult
 
 use crate::types::{
     Addresses, Contract, DeployPayload, DeployResp, ExecPayload, GetContractPayload,
-    GetContractResp, InitGenesisPayload,
+    GetContractResp, InitGenesisPayload, Raw,
 };
 use crate::vm::{ChainInterface, Interpreter, InterpreterConf, InterpreterParams};
 
@@ -61,12 +61,7 @@ impl<SDK: ServiceSDK + 'static> RiscvService<SDK> {
         Ok(())
     }
 
-    fn run(
-        &self,
-        ctx: ServiceContext,
-        payload: ExecPayload,
-        is_init: bool,
-    ) -> ProtocolResult<String> {
+    fn run(&self, ctx: ServiceContext, payload: ExecPayload, is_init: bool) -> ProtocolResult<Raw> {
         let contract = self
             .sdk
             .borrow()
@@ -98,23 +93,24 @@ impl<SDK: ServiceSDK + 'static> RiscvService<SDK> {
         let r = interpreter.run().map_err(ServiceError::CkbVm)?;
         let ret = String::from_utf8_lossy(r.ret.as_ref()).to_string();
         if r.ret_code != 0 {
-            return Err(ServiceError::NonZeroExitCode {
+            Err(ServiceError::NonZeroExitCode {
                 exitcode: r.ret_code,
                 ret,
             }
-            .into());
+            .into())
+        } else {
+            ctx.sub_cycles(r.cycles_used)?;
+            Ok(Raw(ret))
         }
-        ctx.sub_cycles(r.cycles_used)?;
-        Ok(ret)
     }
 
     #[read]
-    fn call(&self, ctx: ServiceContext, payload: ExecPayload) -> ProtocolResult<String> {
+    fn call(&self, ctx: ServiceContext, payload: ExecPayload) -> ProtocolResult<Raw> {
         self.run(ctx, payload, false)
     }
 
     #[write]
-    fn exec(&mut self, ctx: ServiceContext, payload: ExecPayload) -> ProtocolResult<String> {
+    fn exec(&mut self, ctx: ServiceContext, payload: ExecPayload) -> ProtocolResult<Raw> {
         self.run(ctx, payload, false)
     }
 
@@ -208,7 +204,7 @@ impl<SDK: ServiceSDK + 'static> RiscvService<SDK> {
                 args:    payload.init_args,
             };
 
-            self.run(ctx, init_payload, true)?
+            self.run(ctx, init_payload, true)?.0
         } else {
             String::new()
         };

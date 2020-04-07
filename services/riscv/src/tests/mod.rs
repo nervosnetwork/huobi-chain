@@ -89,18 +89,18 @@ fn test_deploy_and_run() {
         address: address.clone(),
         args:    "get k".into(),
     });
-    assert_eq!(&exec_result.unwrap(), "init");
+    assert_eq!(&exec_result.unwrap().0, "init");
     let exec_payload = ExecPayload {
         address: address.clone(),
         args:    "set k v".into(),
     };
     let exec_result = service.exec(context.clone(), exec_payload);
-    assert_eq!(&exec_result.unwrap(), "");
+    assert_eq!(&exec_result.unwrap().0, "");
     let exec_result = service.call(context.clone(), ExecPayload {
         address: address.clone(),
         args:    "get k".into(),
     });
-    assert_eq!(&exec_result.unwrap(), "v");
+    assert_eq!(&exec_result.unwrap().0, "v");
 
     // wrong command
     let exec_result = service.exec(context.clone(), ExecPayload {
@@ -132,7 +132,7 @@ impl Dispatcher for MockDispatcher {
             let mut service = cell.borrow_mut();
 
             Ok(ExecResp {
-                ret:      service.exec(context.clone(), payload)?,
+                ret:      service.exec(context.clone(), payload)?.0,
                 is_error: false,
             })
         })

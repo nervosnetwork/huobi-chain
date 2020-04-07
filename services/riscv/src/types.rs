@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 
 use derive_more::Constructor;
 use rlp;
@@ -33,6 +33,18 @@ impl TryFrom<u8> for InterpreterType {
 impl Default for InterpreterType {
     fn default() -> Self {
         Self::Binary
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Raw(pub String);
+
+impl Serialize for Raw {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&*self.0)
     }
 }
 
