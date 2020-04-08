@@ -29,7 +29,7 @@ function sleep(ms: number) {
 
 async function check_produces_block(heightNow?) {
   heightNow = heightNow || (await client.getBlock()).header.execHeight;
-  const timeoutLoopTimes = 10;
+  const timeoutLoopTimes = 100;
   for (const i of _.range(timeoutLoopTimes)) {
     await sleep(200);
     const newHeight = (await client.getBlock()).header.execHeight;
