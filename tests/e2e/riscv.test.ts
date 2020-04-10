@@ -196,8 +196,15 @@ describe("riscv service", () => {
     const addr = await deploy(code, "", "Binary");
     // console.log(addr);
 
+    // contract call
+    let exec_res = await exec(addr, "test_call_dummy_method");
+    // console.log(exec_res);
+    let exec_res2 = await exec(addr, "dummy_method");
+    // console.log(exec_res);
+    expect(exec_res.response.ret).toBe(exec_res2.response.ret);
+
     // invoke pvm_service_call failed
-    let exec_res = await exec(addr, "test_service_call_read_fail");
+    exec_res = await exec(addr, "test_service_call_read_fail");
     // console.log(exec_res);
     expect(
       exec_res.response.ret.includes(
