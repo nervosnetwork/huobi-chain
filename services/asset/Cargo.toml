@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 muta = { git = "https://github.com/nervosnetwork/muta", tag = "v0.1.2-beta2" }
-protocol = { git = "https://github.com/nervosnetwork/muta", tag = "v0.1.2-beta2", package = "muta-protocol" }
+protocol = { git = "https://github.com/nervosnetwork/muta", rev = "aff5638",  package = "muta-protocol" }
 binding-macro = { git = "https://github.com/nervosnetwork/muta", tag = "v0.1.2-beta2" }
 muta-codec-derive = "0.2"
 
