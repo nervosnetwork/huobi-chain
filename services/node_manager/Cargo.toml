@@ -7,8 +7,8 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-muta = { git = "https://github.com/nervosnetwork/muta", rev = "0ea2251660c399cbaafc97ba5e0d26edd94aa954"}
-protocol = { git = "https://github.com/nervosnetwork/muta", rev = "0ea2251660c399cbaafc97ba5e0d26edd94aa954",  package = "muta-protocol" }
+muta = { git = "https://github.com/nervosnetwork/muta", rev = "ef4c0648"}
+protocol = { git = "https://github.com/nervosnetwork/muta", rev = "ef4c0648",  package = "muta-protocol" }
 binding-macro = { git = "https://github.com/nervosnetwork/muta", tag = "v0.1.2-beta2" }
 
 serde = { version = "1.0", features = ["derive"] }
