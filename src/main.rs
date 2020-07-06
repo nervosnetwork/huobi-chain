@@ -23,7 +23,7 @@ impl ServiceMapping for DefaultServiceMapping {
             "authorization" => Box::new(AuthorizationService::new(sdk)) as Box<dyn Service>,
             "asset" => Box::new(AssetService::new(sdk)) as Box<dyn Service>,
             "metadata" => Box::new(MetadataService::new(sdk)) as Box<dyn Service>,
-            "kyc" => Box::new(KycService::new(sdk) as Box<dyn Service>),
+            "kyc" => Box::new(KycService::new(sdk)) as Box<dyn Service>,
             "riscv" => Box::new(RiscvService::init(sdk)) as Box<dyn Service>,
             "governance" => Box::new(GovernanceService::new(sdk)) as Box<dyn Service>,
             "admission_control" => Box::new(AdmissionControlService::new(sdk)) as Box<dyn Service>,
