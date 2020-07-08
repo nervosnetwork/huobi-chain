@@ -2,7 +2,6 @@ use admission_control::AdmissionControlService;
 use asset::AssetService;
 use authorization::AuthorizationService;
 use derive_more::{Display, From};
-use multi_signature::MultiSignatureService;
 use governance::GovernanceService;
 use kyc::KycService;
 use metadata::MetadataService;
