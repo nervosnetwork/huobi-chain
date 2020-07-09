@@ -1,10 +1,9 @@
 #[macro_use]
 mod macros;
-mod duktape;
 
 use crate::{
     types::{
-        AddressList, DeployPayload, Event, ExecPayload, GetContractPayload, InitGenesisPayload,
+        AddressList, DeployPayload, ExecPayload, GetContractPayload, InitGenesisPayload,
         InterpreterType,
     },
     RiscvService, ServiceError,
@@ -40,6 +39,10 @@ thread_local! {
 }
 
 const CYCLE_LIMIT: u64 = 1024 * 1024 * 1024;
+const CYCLE_PRICE: u64 = 1;
+const CYCLE_USED: u64 = 3;
+const NONCE: &str = "0x1122334455667788990012223344556677889900112233445566778899001122";
+const TX_HASH: &str = "0x1234112233445566778899001222334455667788990011223344556677889900";
 const CALLER: &str = "0x0000000000000000000000000000000000000001";
 const ADMIN: &str = "0x755cdba6ae4f479f7164792b318b2a06c759833b";
 
@@ -51,6 +54,116 @@ macro_rules! read_code {
         file.read_to_end(&mut buffer).expect("read code file");
         hex::encode(Bytes::from(buffer).as_ref())
     }};
+}
+
+#[test]
+fn test_pvm_general_ecall() {
+    let mut service = TestRiscvService::new();
+    let context = TestContext::default().make_admin();
+
+    let code = read_code!("src/tests/general");
+
+    let deploy_result = service!(service, deploy, context.clone(), DeployPayload {
+        code,
+        intp_type: InterpreterType::Binary,
+        init_args: "hello wold".into(),
+    });
+    assert_eq!(deploy_result.init_ret.as_str(), "hello wold");
+
+    let contract_address: Address = deploy_result.address;
+    let exec_result = service!(service, exec, context.clone(), ExecPayload {
+        address: contract_address.clone(),
+        args:    "pvm_load_args".into(),
+    });
+    assert_eq!(&exec_result, "pvm_load_args");
+
+    let exec_result = service!(service, exec, context.clone(), ExecPayload {
+        address: contract_address.clone(),
+        args:    "pvm_cycle_limit".into(),
+    });
+    assert_eq!(exec_result, CYCLE_LIMIT.to_string());
+
+    let exec_result = service!(service, exec, context.clone(), ExecPayload {
+        address: contract_address.clone(),
+        args:    "pvm_cycle_used".into(),
+    });
+    assert_ne!(exec_result, 0.to_string());
+
+    let exec_result = service!(service, exec, context.clone(), ExecPayload {
+        address: contract_address.clone(),
+        args:    "pvm_cycle_price".into(),
+    });
+    assert_eq!(exec_result, CYCLE_PRICE.to_string());
+
+    let exec_result = service!(service, exec, context.clone(), ExecPayload {
+        address: contract_address.clone(),
+        args:    "pvm_origin".into(),
+    });
+    assert_eq!(exec_result.as_str(), ADMIN);
+
+    let exec_result = service!(service, exec, context.clone(), ExecPayload {
+        address: contract_address.clone(),
+        args:    "pvm_caller".into(),
+    });
+    assert_eq!(exec_result.as_str(), "extra");
+
+    let exec_result = service!(service, exec, context.clone(), ExecPayload {
+        address: contract_address.clone(),
+        args:    "pvm_address".into(),
+    });
+    assert_eq!(exec_result, contract_address.as_hex());
+
+    let exec_result = service!(service, exec, context.clone(), ExecPayload {
+        address: contract_address.clone(),
+        args:    "pvm_block_height".into(),
+    });
+    assert_eq!(exec_result, (1 + 1).to_string());
+
+    let exec_result = service!(service, exec, context.clone(), ExecPayload {
+        address: contract_address.clone(),
+        args:    "pvm_extra".into(),
+    });
+    assert_eq!(exec_result.as_str(), "extra");
+
+    let exec_result = service!(service, exec, context.clone(), ExecPayload {
+        address: contract_address.clone(),
+        args:    "pvm_timestamp".into(),
+    });
+    assert_eq!(exec_result.as_str(), "0");
+
+    let _exec_result = service.exec(context.clone(), ExecPayload {
+        address: contract_address.clone(),
+        args:    "pvm_emit_event".into(),
+    });
+    assert_eq!(context.get_events().len(), 1usize);
+    assert_eq!(
+        context
+            .get_events()
+            .get(0)
+            .expect("pvm_emit_event err")
+            .name,
+        "event_name"
+    );
+    assert_eq!(
+        context
+            .get_events()
+            .get(0)
+            .expect("pvm_emit_event err")
+            .data,
+        "event_data"
+    );
+
+    let exec_result = service!(service, exec, context.clone(), ExecPayload {
+        address: contract_address.clone(),
+        args:    "pvm_tx_hash".into(),
+    });
+    assert_eq!(exec_result.as_str(), TX_HASH);
+
+    let exec_result = service!(service, exec, context, ExecPayload {
+        address: contract_address,
+        args:    "pvm_tx_nonce".into(),
+    });
+    assert_eq!(exec_result.as_str(), NONCE);
 }
 
 #[test]
@@ -230,11 +343,8 @@ fn should_deny_deploy_contract_until_granted_when_authorization_enabled() {
     });
     assert_eq!(context.get_events().len(), 1);
 
-    let event: Event<AddressList> = context.get_events()[0].data.parse().expect("parse event");
-    assert_eq!(event.topic, "grant_deploy_auth");
-    assert_eq!(event.data, AddressList {
-        addresses: allow_list.clone(),
-    });
+    let event_name: String = context.get_events()[0].name.parse().expect("parse event");
+    assert_eq!(event_name, "GrantAuth");
 
     let granted = service!(service, check_deploy_auth, ctx.make(), AddressList {
         addresses: allow_list.clone(),
@@ -274,16 +384,13 @@ fn should_require_admin_permission_to_revoke_deploy_auth() {
 
     let context = ctx.make_admin();
     let revoked = service.revoke_deploy_auth(context.clone(), AddressList {
-        addresses: vec![caller.clone()],
+        addresses: vec![caller],
     });
     assert!(!revoked.is_error());
     assert_eq!(context.get_events().len(), 1);
 
-    let event: Event<AddressList> = context.get_events()[0].data.parse().expect("parse event");
-    assert_eq!(event.topic, "revoke_deploy_auth");
-    assert_eq!(event.data, AddressList {
-        addresses: vec![caller],
-    });
+    let event_name: String = context.get_events()[0].name.parse().expect("parse event");
+    assert_eq!(event_name, "RevokeAuth");
 
     let deployed = service.deploy(ctx.make(), DeployPayload {
         code,
@@ -386,16 +493,13 @@ fn should_require_admin_permission_to_revoke_contracts() {
 
     let context = ctx.make_admin();
     let approved = service.revoke_contracts(context.clone(), AddressList {
-        addresses: vec![deployed.address.clone()],
+        addresses: vec![deployed.address],
     });
     assert!(!approved.is_error());
     assert_eq!(context.get_events().len(), 1);
 
-    let event: Event<AddressList> = context.get_events()[0].data.parse().expect("parse event");
-    assert_eq!(event.topic, "revoke_contracts");
-    assert_eq!(event.data, AddressList {
-        addresses: vec![deployed.address],
-    });
+    let event_name: String = context.get_events()[0].name.parse().expect("parse event");
+    assert_eq!(event_name, "RevokeContract");
 }
 
 #[test]
@@ -419,16 +523,13 @@ fn should_require_admin_permission_to_approve_contracts() {
 
     let context = ctx.make_admin();
     let approved = service.approve_contracts(context.clone(), AddressList {
-        addresses: vec![deployed.address.clone()],
+        addresses: vec![deployed.address],
     });
     assert!(!approved.is_error());
     assert_eq!(context.get_events().len(), 1);
 
-    let event: Event<AddressList> = context.get_events()[0].data.parse().expect("parse event");
-    assert_eq!(event.topic, "approve_contracts");
-    assert_eq!(event.data, AddressList {
-        addresses: vec![deployed.address],
-    });
+    let event_name: String = context.get_events()[0].name.parse().expect("parse event");
+    assert_eq!(event_name, "ApproveContract");
 }
 
 #[test]
@@ -578,18 +679,18 @@ impl TestContext {
         self.count += 1;
         self.height += 1;
 
-        let tx_hash = Hash::digest(Bytes::from(format!("{}", self.count)));
+        let tx_hash = Hash::from_hex(TX_HASH).unwrap();
 
         ServiceContextParams {
             tx_hash:         Some(tx_hash),
-            nonce:           None,
+            nonce:           Some(Hash::from_hex(NONCE).unwrap()),
             cycles_limit:    CYCLE_LIMIT,
-            cycles_price:    1,
-            cycles_used:     Rc::new(RefCell::new(3)),
+            cycles_price:    CYCLE_PRICE,
+            cycles_used:     Rc::new(RefCell::new(CYCLE_USED)),
             caller:          Address::from_hex(CALLER).expect("ctx caller"),
             height:          self.height,
             timestamp:       0,
-            extra:           None,
+            extra:           Some(Bytes::from("extra")),
             service_name:    "service_name".to_owned(),
             service_method:  "service_method".to_owned(),
             service_payload: "service_payload".to_owned(),

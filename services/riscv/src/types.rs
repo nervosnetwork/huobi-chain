@@ -1,20 +1,17 @@
 use crate::ServiceError;
 
-use rlp;
 use serde::{Deserialize, Serialize};
 
 use protocol::fixed_codec::{FixedCodec, FixedCodecError};
 use protocol::types::{Address, Hash};
 use protocol::{Bytes, ProtocolResult};
 
-use std::{convert::TryFrom, ops::Deref, str::FromStr};
+use std::{convert::TryFrom, ops::Deref};
 
 #[repr(u8)]
 #[derive(Deserialize, Serialize, Clone, Debug, Copy)]
 pub enum InterpreterType {
     Binary = 1,
-    #[cfg(debug_assertions)]
-    Duktape = 2,
 }
 
 impl TryFrom<u8> for InterpreterType {
@@ -23,8 +20,6 @@ impl TryFrom<u8> for InterpreterType {
     fn try_from(val: u8) -> Result<InterpreterType, Self::Error> {
         match val {
             1 => Ok(InterpreterType::Binary),
-            #[cfg(debug_assertions)]
-            2 => Ok(InterpreterType::Duktape),
             _ => Err("unsupport interpreter"),
         }
     }
@@ -213,18 +208,4 @@ pub struct InitGenesisPayload {
     pub deploy_auth:          Vec<Address>,
     #[serde(default)]
     pub admins:               Vec<Address>,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct Event<Data> {
-    pub topic: String,
-    pub data:  Data,
-}
-
-impl<Data: for<'a> Deserialize<'a>> FromStr for Event<Data> {
-    type Err = serde_json::Error;
-
-    fn from_str(str: &str) -> Result<Self, Self::Err> {
-        serde_json::from_str(str)
-    }
 }
