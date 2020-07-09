@@ -329,27 +329,27 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
 
     #[tx_hook_after]
     fn handle_tx_fee(&mut self, ctx: ServiceContext) {
-        let asset = self
-            .get_native_asset(&ctx)
-            .expect("Can not get native asset");
+        if let Ok(asset) = self.get_native_asset(&ctx) {
+            let tx_fee = self.calc_tx_fee(&ctx);
 
-        let tx_fee = self.calc_tx_fee(&ctx);
+            // Reset accumulated profit
+            let keys = self.profits.iter().map(|(k, _)| k).collect::<Vec<_>>();
+            for key in keys {
+                self.profits.remove(&key);
+            }
 
-        // Reset accumulated profit
-        let keys = self.profits.iter().map(|(k, _)| k).collect::<Vec<_>>();
-        for key in keys {
-            self.profits.remove(&key);
+            let tx_fee_inlet_address: Address =
+                self.sdk.get_value(&TX_FEE_INLET_KEY.to_owned()).unwrap();
+
+            let _ = self.transfer_from(&ctx, TransferFromPayload {
+                asset_id:  asset.id,
+                sender:    ctx.get_caller(),
+                recipient: tx_fee_inlet_address,
+                value:     tx_fee,
+            });
+        } else {
+            ctx.cancel("Can not get native asset".to_string());
         }
-
-        let tx_fee_inlet_address: Address =
-            self.sdk.get_value(&TX_FEE_INLET_KEY.to_owned()).unwrap();
-
-        let _ = self.transfer_from(&ctx, TransferFromPayload {
-            asset_id:  asset.id,
-            sender:    ctx.get_caller(),
-            recipient: tx_fee_inlet_address,
-            value:     tx_fee,
-        });
     }
 
     #[hook_after]
