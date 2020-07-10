@@ -106,7 +106,6 @@ impl<SDK: ServiceSDK> AssetService<SDK> {
         let asset_id: Hash = self
             .get_value(&NATIVE_ASSET_KEY.to_owned())
             .expect("native asset id should not be empty");
-
         self.read_asset_(&asset_id)
             .map(ServiceResponse::from_succeed)
             .unwrap_or_else(|| ServiceError::AssetNotFound(asset_id).into())
@@ -115,9 +114,10 @@ impl<SDK: ServiceSDK> AssetService<SDK> {
     #[cycles(100_00)]
     #[read]
     fn get_asset(&self, _ctx: ServiceContext, payload: GetAssetPayload) -> ServiceResponse<Asset> {
-        self.read_asset_(&payload.id)
-            .map(ServiceResponse::from_succeed)
-            .unwrap_or_else(|| ServiceError::AssetNotFound(payload.id).into())
+        match self.read_asset_(&payload.id) {
+            Some(s) => ServiceResponse::from_succeed(s),
+            None => ServiceError::AssetNotFound(payload.id).into(),
+        }
     }
 
     #[cycles(100_00)]
