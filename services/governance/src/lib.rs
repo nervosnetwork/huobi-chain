@@ -344,15 +344,13 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
         if let Ok(asset) = self.get_native_asset(&ctx) {
             let tx_fee = if let Ok(tmp) = self.calc_tx_fee(&ctx) {
                 tmp
+            } else if let Some(info) = self
+                .sdk
+                .get_value::<_, GovernanceInfo>(&INFO_KEY.to_owned())
+            {
+                info.tx_floor_fee
             } else {
-                if let Some(info) = self
-                    .sdk
-                    .get_value::<_, GovernanceInfo>(&INFO_KEY.to_owned())
-                {
-                    info.tx_floor_fee
-                } else {
-                    return;
-                }
+                return;
             };
 
             // Reset accumulated profit
@@ -429,8 +427,6 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
             };
 
             let _ = self.transfer_from(&ctx, payload);
-        } else {
-            return;
         }
     }
 
