@@ -75,11 +75,12 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
     fn get_admin_address(&self, ctx: ServiceContext) -> ServiceResponse<Address> {
         if let Some(info) = self
             .sdk
-            .get_value::<_, GovernanceInfo>(&INFO_KEY.to_owned()) {
-                ServiceResponse::from_succeed(info.admin)
-            } else {
-                ServiceResponse::from_error(198, "Missing info".to_owned())
-            }        
+            .get_value::<_, GovernanceInfo>(&INFO_KEY.to_owned())
+        {
+            ServiceResponse::from_succeed(info.admin)
+        } else {
+            ServiceResponse::from_error(198, "Missing info".to_owned())
+        }
     }
 
     #[cycles(210_00)]
@@ -87,11 +88,12 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
     fn get_govern_info(&self, ctx: ServiceContext) -> ServiceResponse<GovernanceInfo> {
         if let Some(info) = self
             .sdk
-            .get_value::<_, GovernanceInfo>(&INFO_KEY.to_owned()) {
-                ServiceResponse::from_succeed(info)
-            } else {
-                ServiceResponse::from_error(198, "Missing info".to_owned())
-            }
+            .get_value::<_, GovernanceInfo>(&INFO_KEY.to_owned())
+        {
+            ServiceResponse::from_succeed(info)
+        } else {
+            ServiceResponse::from_error(198, "Missing info".to_owned())
+        }
     }
 
     #[cycles(210_00)]
@@ -99,11 +101,12 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
     fn get_tx_failure_fee(&self, ctx: ServiceContext) -> ServiceResponse<u64> {
         if let Some(info) = self
             .sdk
-            .get_value::<_, GovernanceInfo>(&INFO_KEY.to_owned()) {
-                ServiceResponse::from_succeed(info.tx_failure_fee)
-            } else {
-                ServiceResponse::from_error(198, "Missing info".to_owned())
-            }
+            .get_value::<_, GovernanceInfo>(&INFO_KEY.to_owned())
+        {
+            ServiceResponse::from_succeed(info.tx_failure_fee)
+        } else {
+            ServiceResponse::from_error(198, "Missing info".to_owned())
+        }
     }
 
     #[cycles(210_00)]
@@ -111,11 +114,12 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
     fn get_tx_floor_fee(&self, ctx: ServiceContext) -> ServiceResponse<u64> {
         if let Some(info) = self
             .sdk
-            .get_value::<_, GovernanceInfo>(&INFO_KEY.to_owned()) {
-                ServiceResponse::from_succeed(info.tx_floor_fee)
-            } else {
-                ServiceResponse::from_error(198, "Missing info".to_owned())
-            }
+            .get_value::<_, GovernanceInfo>(&INFO_KEY.to_owned())
+        {
+            ServiceResponse::from_succeed(info.tx_floor_fee)
+        } else {
+            ServiceResponse::from_error(198, "Missing info".to_owned())
+        }
     }
 
     #[cycles(210_00)]
@@ -127,11 +131,12 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
 
         let mut info = if let Some(tmp) = self
             .sdk
-            .get_value::<_, GovernanceInfo>(&INFO_KEY.to_owned()) {
-               tmp
-            } else {
-               return ServiceResponse::from_error(198, "Missing info".to_owned());
-            };
+            .get_value::<_, GovernanceInfo>(&INFO_KEY.to_owned())
+        {
+            tmp
+        } else {
+            return ServiceResponse::from_error(198, "Missing info".to_owned());
+        };
         info.admin = payload.admin.clone();
 
         self.sdk.set_value(INFO_KEY.to_owned(), info);
@@ -340,12 +345,15 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
             let tx_fee = if let Ok(tmp) = self.calc_tx_fee(&ctx) {
                 tmp
             } else {
-                if let Some(info) = self.sdk.get_value::<_, GovernanceInfo>(&INFO_KEY.to_owned()) {
+                if let Some(info) = self
+                    .sdk
+                    .get_value::<_, GovernanceInfo>(&INFO_KEY.to_owned())
+                {
                     info.tx_floor_fee
                 } else {
                     return;
                 }
-            };   
+            };
 
             // Reset accumulated profit
             let keys = self.profits.iter().map(|(k, _)| k).collect::<Vec<_>>();
@@ -353,9 +361,10 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
                 self.profits.remove(&key);
             }
 
-            let tx_fee_inlet_address =
-                self.sdk.get_value::<_, Address>(&TX_FEE_INLET_KEY.to_owned());
-            
+            let tx_fee_inlet_address = self
+                .sdk
+                .get_value::<_, Address>(&TX_FEE_INLET_KEY.to_owned());
+
             if tx_fee_inlet_address.is_none() {
                 return;
             }
@@ -376,7 +385,7 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
         let info = self
             .sdk
             .get_value::<_, GovernanceInfo>(&INFO_KEY.to_owned());
-        
+
         let sender_address = self
             .sdk
             .get_value::<_, Address>(&MINER_PROFIT_OUTLET_KEY.to_owned());
@@ -425,7 +434,7 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
         }
     }
 
-    fn calc_tx_fee(&mut self, ctx: &ServiceContext) -> Result<u64, (u64, String)>{
+    fn calc_tx_fee(&mut self, ctx: &ServiceContext) -> Result<u64, (u64, String)> {
         let profit = self.calc_profit_records(ctx);
 
         let info: GovernanceInfo = self
@@ -479,13 +488,15 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
     #[cfg(not(test))]
     fn get_balance(&self, ctx: &ServiceContext) -> Result<u64, (u64, String)> {
         let asset = self
-            .get_native_asset(ctx).map_err(|e| (e.code, e.error_message))?;
+            .get_native_asset(ctx)
+            .map_err(|e| (e.code, e.error_message))?;
 
         let payload = GetBalancePayload {
             asset_id: asset.id,
             user:     ctx.get_caller(),
         };
-        let payload = serde_json::to_string(&payload).map_err(|_| (200, "decode json".to_string()))?;
+        let payload =
+            serde_json::to_string(&payload).map_err(|_| (200, "decode json".to_string()))?;
 
         let resp = self.sdk.read(
             &ctx,
@@ -500,13 +511,12 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
         }
 
         let balance = serde_json::from_str::<GetBalanceResponse>(resp.succeed_data.as_str())
-        .map_err(|_| (200, "decode json".to_string()))?;
+            .map_err(|_| (200, "decode json".to_string()))?;
         Ok(balance.balance)
     }
 
     fn is_admin(&self, ctx: &ServiceContext) -> bool {
-        self
-            .sdk
+        self.sdk
             .get_value::<_, GovernanceInfo>(&INFO_KEY.to_string())
             .map_or(false, |info| info.admin == ctx.get_caller())
     }
@@ -584,7 +594,8 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
         if resp.is_error() {
             Err(ServiceResponse::from_error(resp.code, resp.error_message))
         } else {
-            serde_json::from_str(&resp.succeed_data).map_err(|_| ServiceResponse::from_error(200, "decode json".to_string()))
+            serde_json::from_str(&resp.succeed_data)
+                .map_err(|_| ServiceResponse::from_error(200, "decode json".to_string()))
         }
     }
 
