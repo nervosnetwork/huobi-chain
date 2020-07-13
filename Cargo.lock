@@ -1730,17 +1730,28 @@ version = "0.4.0-beta2"
 dependencies = [
  "admission_control",
  "asset 0.4.0-beta2",
+ "async-trait",
  "authorization",
+ "bytes 0.5.5",
+ "cita_trie",
  "clap",
  "derive_more 0.99.9",
+ "framework",
  "governance",
+ "hex",
  "kyc",
+ "lazy_static",
  "metadata 0.4.0-beta2",
  "multi-signature",
  "muta",
+ "muta-codec-derive",
  "muta-protocol",
  "riscv",
+ "rlp 0.4.5",
+ "serde",
+ "serde_json",
  "tokio 0.2.21",
+ "toml 0.5.6",
 ]
 
 [[package]]

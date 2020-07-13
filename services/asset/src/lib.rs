@@ -228,32 +228,6 @@ impl<SDK: ServiceSDK> AssetService<SDK> {
 
     #[cycles(210_00)]
     #[write]
-    fn approve(&mut self, ctx: ServiceContext, payload: ApprovePayload) -> ServiceResponse<()> {
-        require_asset_exists!(self, payload.asset_id);
-
-        let caller = ctx.get_caller();
-        if caller == payload.to {
-            return ServiceError::ApproveToSelf.into();
-        }
-
-        let asset_id = &payload.asset_id;
-        let mut caller_balance = self.asset_balance(&caller, &asset_id);
-
-        caller_balance.update_allowance(payload.to.clone(), payload.value);
-        self.set_account_value(&caller, asset_id.to_owned(), caller_balance);
-
-        let event = ApproveEvent {
-            asset_id: payload.asset_id,
-            grantor:  caller,
-            grantee:  payload.to,
-            value:    payload.value,
-            memo:     payload.memo,
-        };
-        Self::emit_event(&ctx, "ApproveAsset".to_owned(), event)
-    }
-
-    #[cycles(210_00)]
-    #[write]
     fn transfer_from(
         &mut self,
         ctx: ServiceContext,
@@ -304,6 +278,32 @@ impl<SDK: ServiceSDK> AssetService<SDK> {
             memo: payload.memo,
         };
         Self::emit_event(&ctx, "TransferFrom".to_owned(), event)
+    }
+
+    #[cycles(210_00)]
+    #[write]
+    fn approve(&mut self, ctx: ServiceContext, payload: ApprovePayload) -> ServiceResponse<()> {
+        require_asset_exists!(self, payload.asset_id);
+
+        let caller = ctx.get_caller();
+        if caller == payload.to {
+            return ServiceError::ApproveToSelf.into();
+        }
+
+        let asset_id = &payload.asset_id;
+        let mut caller_balance = self.asset_balance(&caller, &asset_id);
+
+        caller_balance.update_allowance(payload.to.clone(), payload.value);
+        self.set_account_value(&caller, asset_id.to_owned(), caller_balance);
+
+        let event = ApproveEvent {
+            asset_id: payload.asset_id,
+            grantor:  caller,
+            grantee:  payload.to,
+            value:    payload.value,
+            memo:     payload.memo,
+        };
+        Self::emit_event(&ctx, "ApproveAsset".to_owned(), event)
     }
 
     #[cycles(210_00)]

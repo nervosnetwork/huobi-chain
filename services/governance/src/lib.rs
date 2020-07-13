@@ -538,6 +538,8 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
             Err(err) => return Err(ServiceError::JsonParse(err).into()),
         };
 
+        println!("{:?}", payload_json);
+
         let resp = self.sdk.write(
             &ctx,
             Some(ADMISSION_TOKEN.clone()),
