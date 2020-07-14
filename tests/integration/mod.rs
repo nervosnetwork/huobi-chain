@@ -4,7 +4,8 @@ use async_trait::async_trait;
 use bytes::{Bytes, BytesMut};
 use cita_trie::MemoryDB;
 use protocol::traits::{
-    Context, Executor, ExecutorParams, ExecutorResp, Service, ServiceMapping, ServiceSDK, Storage, ServiceResponse,
+    Context, Executor, ExecutorParams, ExecutorResp, Service, ServiceMapping, ServiceResponse,
+    ServiceSDK, Storage,
 };
 use protocol::types::{
     Address, Block, Genesis, Hash, Proof, RawTransaction, Receipt, SignedTransaction,
@@ -82,7 +83,7 @@ macro_rules! exec_txs {
             };
 
             let balances = tx_requests().iter().map(|req| {
-                let res: ServiceResponse<String> = 
+                let res: ServiceResponse<String> =
                     executor.read(&params, &FEE_ACCOUNT.clone(), 1, req).expect("query balance");
 
                 assert_eq!(res.is_error(), false);

@@ -271,7 +271,7 @@ fn test_reset_profits_in_tx_hook_after() {
     );
 
     // Manually call tx_hook_after
-    service.handle_tx_fee(ctx);
+    service.deduct_fee(ctx);
 
     assert_eq!(service.profits_len(), 0, "should reset profits");
 }

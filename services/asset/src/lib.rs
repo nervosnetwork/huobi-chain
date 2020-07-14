@@ -11,9 +11,9 @@ use serde::Serialize;
 use crate::types::{
     ApproveEvent, ApprovePayload, Asset, AssetBalance, BurnAssetEvent, BurnAssetPayload,
     ChangeAdminPayload, CreateAssetPayload, GetAllowancePayload, GetAllowanceResponse,
-    GetAssetPayload, GetBalancePayload, GetBalanceResponse, InitGenesisPayload, MintAssetEvent,
-    MintAssetPayload, RelayAssetEvent, RelayAssetPayload, TransferEvent, TransferFromEvent,
-    TransferFromPayload, TransferPayload,
+    GetAssetPayload, GetBalancePayload, GetBalanceResponse, HookTransferFromPayload,
+    InitGenesisPayload, MintAssetEvent, MintAssetPayload, RelayAssetEvent, RelayAssetPayload,
+    TransferEvent, TransferFromEvent, TransferFromPayload, TransferPayload,
 };
 use binding_macro::{cycles, genesis, service, write};
 use protocol::traits::{ExecutorParams, ServiceResponse, ServiceSDK, StoreMap, StoreUint64};
@@ -278,6 +278,43 @@ impl<SDK: ServiceSDK> AssetService<SDK> {
             memo: payload.memo,
         };
         Self::emit_event(&ctx, "TransferFrom".to_owned(), event)
+    }
+
+    #[cycles(210_00)]
+    #[write]
+    fn hook_transfer_from(
+        &mut self,
+        ctx: ServiceContext,
+        payload: HookTransferFromPayload,
+    ) -> ServiceResponse<()> {
+        if let Some(admin_key) = ctx.get_extra() {
+            if admin_key != Bytes::from_static(b"governance") {
+                return ServiceError::Unauthorized.into();
+            }
+        }
+
+        let asset_id: Hash = self
+            .get_value(&NATIVE_ASSET_KEY.to_owned())
+            .expect("native asset id should not be empty");
+
+        if let Err(err) = self._transfer(
+            &payload.sender,
+            &payload.recipient,
+            asset_id.clone(),
+            payload.value,
+        ) {
+            return err.into();
+        }
+
+        let event = TransferFromEvent {
+            asset_id,
+            caller: ctx.get_caller(),
+            sender: payload.sender,
+            recipient: payload.recipient,
+            value: payload.value,
+            memo: payload.memo,
+        };
+        Self::emit_event(&ctx, "HookTransferFrom".to_owned(), event)
     }
 
     #[cycles(210_00)]

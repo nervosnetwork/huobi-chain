@@ -10,5 +10,7 @@ fn test_governance() {
             interval: 5000,
         })
     );
-    println!("{:?}", res);
+
+    assert_eq!(res.fee_inlet_balance, 150);
+    assert_eq!(res.proposer_balance, 10);
 }
