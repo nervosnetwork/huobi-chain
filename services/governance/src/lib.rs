@@ -319,52 +319,79 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
         profit_sum
     }
 
-    // FIXME: expect and unwrap
     #[tx_hook_before]
-    fn pledge_fee(&mut self, ctx: ServiceContext) {
-        let info: GovernanceInfo = self
+    fn pledge_fee(&mut self, ctx: ServiceContext) -> ServiceResponse<String> {
+        let info = self
             .sdk
-            .get_value(&INFO_KEY.to_owned())
-            .expect("Admin should not be none");
-        let tx_fee_inlet_address: Address =
-            self.sdk.get_value(&TX_FEE_INLET_KEY.to_owned()).unwrap();
+            .get_value::<_, GovernanceInfo>(&INFO_KEY.to_owned());
+        let tx_fee_inlet_address = self
+            .sdk
+            .get_value::<_, Address>(&TX_FEE_INLET_KEY.to_owned());
+
+        if info.is_none() || tx_fee_inlet_address.is_none() {
+            return ServiceError::MissingInfo.into();
+        }
+
+        let info = info.unwrap();
+        let tx_fee_inlet_address = tx_fee_inlet_address.unwrap();
 
         // Pledge the tx failure fee before executed the transaction.
-        let _ = self.hook_transfer_from(&ctx, HookTransferFromPayload {
+        let ret = self.hook_transfer_from(&ctx, HookTransferFromPayload {
             sender:    ctx.get_caller(),
             recipient: tx_fee_inlet_address,
             value:     info.tx_failure_fee,
             memo:      "pledge tx failure fee".to_string(),
         });
+
+        if let Err(e) = ret {
+            if e.is_error() {
+                return ServiceResponse::from_error(e.code, e.error_message);
+            }
+        }
+
+        ServiceResponse::from_succeed("".to_owned())
     }
 
     #[tx_hook_after]
-    fn deduct_fee(&mut self, ctx: ServiceContext) {
-        let tx_fee = if let Ok(res) = self.calc_tx_fee(&ctx) {
-            res
-        } else {
-            return;
-        };
-
-        if tx_fee == 0 {
-            return;
+    fn deduct_fee(&mut self, ctx: ServiceContext) -> ServiceResponse<String> {
+        let tx_fee = self.calc_tx_fee(&ctx);
+        if tx_fee.is_err() {
+            return tx_fee.unwrap_err().into();
         }
 
-        let tx_fee_inlet_address: Address =
-            self.sdk.get_value(&TX_FEE_INLET_KEY.to_owned()).unwrap();
+        let tx_fee = tx_fee.unwrap();
+        if tx_fee == 0 {
+            return ServiceResponse::from_succeed("".to_owned());
+        }
 
+        let tx_fee_inlet_address = self
+            .sdk
+            .get_value::<_, Address>(&TX_FEE_INLET_KEY.to_owned());
+        if tx_fee_inlet_address.is_none() {
+            return ServiceError::MissingInfo.into();
+        }
+
+        let tx_fee_inlet_address = tx_fee_inlet_address.unwrap();
         let (tx, rx) = if tx_fee > 0 {
             (ctx.get_caller(), tx_fee_inlet_address)
         } else {
             (tx_fee_inlet_address, ctx.get_caller())
         };
 
-        let _ = self.hook_transfer_from(&ctx, HookTransferFromPayload {
+        let ret = self.hook_transfer_from(&ctx, HookTransferFromPayload {
             sender:    tx,
             recipient: rx,
             value:     tx_fee.abs() as u64,
             memo:      "collect tx fee".to_string(),
         });
+
+        if let Err(e) = ret {
+            if e.is_error() {
+                return ServiceResponse::from_error(e.code, e.error_message);
+            }
+        }
+
+        ServiceResponse::from_succeed("".to_owned())
     }
 
     #[hook_after]
