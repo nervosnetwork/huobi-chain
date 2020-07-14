@@ -4,13 +4,16 @@ pipelineConfig:
     release:
       pipeline:
         agent:
-          image: mutadev/muta-build-env:v0.1.0
+          image: mutadev/muta-build-env:v0.3.0
         options:
           timeout:
             time: 30
             unit: minutes
         stages:
           - name: release
+            environment:
+              - name: BASE_WORKSPACE
+                value: /workspace/source
             options:
               containerOptions:
                 volumeMounts:
@@ -32,11 +35,24 @@ pipelineConfig:
                         path: config.json
 
             steps:
-              - name: build-and-push
+              - name: build-release
+                image: mutadev/muta-build-env:v0.3.0
+                env:
+                  - name: OPENSSL_STATIC
+                    value: "1"
+                  - name: OPENSSL_LIB_DIR
+                    value: /usr/lib/x86_64-linux-gnu
+                  - name: OPENSSL_INCLUDE_DIR
+                    value: /usr/include/openssl
+                command: cargo
+                args:
+                  - build
+                  - --release
+
+              - name: push-image
                 image: gcr.io/kaniko-project/executor:9912ccbf8d22bbafbf971124600fbb0b13b9cbd6
                 command: /kaniko/executor
                 args:
                   - --dockerfile=/workspace/source/devtools/docker-build/Dockerfile
-                  - --destination=mutadev/huobi-chain:latest
+                  - --destination=mutadev/${REPO_NAME}:${BRANCH_NAME}
                   - --context=/workspace/source
-                  - --cache-dir=/workspace

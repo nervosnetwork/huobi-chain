@@ -1,0 +1,79 @@
+# Default values for deploy-chaos.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+namespace: mutadev
+
+repo_name: huobi
+version: latest
+
+resources:
+  cpu: 1100m
+  memory: 3Gi
+  storage: 5Gi
+  persistent: false
+
+chaos: 
+  - all
+
+size: 4
+
+chain_config:
+  network:
+    rpc_timeout: 10
+  mempool:
+    pool_size: 20000
+    broadcast_txs_size: 200
+    broadcast_txs_interval: 200
+
+chain_genesis:
+  prevhash: 0x44915be5b6c20b0678cf05fcddbbaa832e25d7e6ac538784cd5c24de00d47472
+  metadata:
+    chain_id: 0xb6a4d7da21443f5e816e8700eea87610e6d769657d6b8ec73028457bf2ca4036
+    timeout_gap: 20
+    cycles_limit: 99999999
+    cycles_price: 1
+    interval: 3000
+    propose_ratio: 15
+    prevote_ratio: 15
+    precommit_ratio: 10
+    brake_ratio: 3
+    tx_num_limit: 10000
+    max_tx_size: 1073741824
+  services:
+    - name: asset
+      payload: {
+          "id": "0xf56924db538e77bb5951eb5ff0d02b88983c49c45eea30e8ae3e7234b311436c",
+          "name": "Huobi Token Test",
+          "symbol": "HTTest",
+          "supply": 50000000000000000,
+          "precision": 8,
+          "issuers": [{"addr": "0xcff1002107105460941f797828f468667aa1a2db", "balance": 50000000000000000}],
+          "fee": 1,
+          "fee_account": "0xcff1002107105460941f797828f468667aa1a2db",
+          "admin": "0xcff1002107105460941f797828f468667aa1a2db"
+      }
+    - name: governance
+      payload: {
+          "info": {
+              "admin": "0xcff1002107105460941f797828f468667aa1a2db",
+              "tx_failure_fee": 1000,
+              "tx_floor_fee": 100,
+              "profit_deduct_rate_per_million": 10,
+              "tx_fee_discount": [
+                  {"threshold": 10, "discount_percent": 10}
+              ],
+              "miner_benefit": 3
+          },
+          "tx_fee_inlet_address": "0xcff1002107105460941f797828f468667aa1a2db",
+          "miner_profit_outlet_address": "0x9cccacbb8a4b0353d42138613b2db72d6a661cf4",
+          "miner_charge_map": [
+              {"address": "0x9cccacbb8a4b0353d42138613b2db72d6a661cf4", "miner_charge_address": "0x9cccacbb8a4b0353d42138613b2db72d6a661cf4"}
+          ]
+      }
+    - name: riscv
+      payload: {
+          "enable_authorization": true,
+          "admins": ["0xcff1002107105460941f797828f468667aa1a2db"],
+          "deploy_auth": ["0x9cccacbb8a4b0353d42138613b2db72d6a661cf4"]
+      }

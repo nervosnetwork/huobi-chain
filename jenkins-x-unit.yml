@@ -4,10 +4,10 @@ pipelineConfig:
     pullRequest:
       pipeline:
         agent:
-          image: mutadev/muta-build-env:v0.1.0
+          image: mutadev/muta-build-env:v0.3.0
         options:
           timeout:
-            time: 30
+            time: 45
             unit: minutes
         stages:
           - name: unit
