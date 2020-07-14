@@ -359,7 +359,12 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
 
     #[tx_hook_after]
     fn deduct_fee(&mut self, ctx: ServiceContext) {
-        let tx_fee = self.calc_tx_fee(&ctx);
+        let tx_fee = if let Ok(res) = self.calc_tx_fee(&ctx) {
+            res 
+        } else {
+            return;
+        };
+        
         if tx_fee == 0 {
             return;
         }
@@ -430,9 +435,9 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
         let _ = self.hook_transfer_from(&ServiceContext::new(ctx_params), payload);
     }
 
-    fn calc_tx_fee(&mut self, ctx: &ServiceContext) -> i128 {
+    fn calc_tx_fee(&mut self, ctx: &ServiceContext) -> Result<i128, (u64, String)> {
         if ctx.canceled() {
-            return 0i128;
+            return Ok(0i128);
         }
 
         let info: GovernanceInfo = self
@@ -447,10 +452,10 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
             .map_err(|_| (199, "overflow".to_string()))?;
 
         let fee = self
-            .calc_discount_fee(ctx, fee, &info.tx_fee_discount)
+            .calc_discount_fee(ctx, fee, &info.tx_fee_discount)?
             .max(info.tx_floor_fee) as i128;
 
-        fee - info.tx_failure_fee as i128
+        Ok(fee - info.tx_failure_fee as i128)
     }
 
     fn calc_discount_fee(
