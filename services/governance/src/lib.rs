@@ -359,7 +359,7 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
     fn deduct_fee(&mut self, ctx: ServiceContext) -> ServiceResponse<String> {
         let tx_fee = self.calc_tx_fee(&ctx);
         if tx_fee.is_err() {
-            return tx_fee.unwrap_err().into();
+            return tx_fee.err().unwrap().into();
         }
 
         let tx_fee = tx_fee.unwrap();
@@ -511,7 +511,7 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
             asset_id: asset.id,
             user:     ctx.get_caller(),
         };
-        let payload = serde_json::to_string(&payload).map_err(|e| ServiceError::JsonParse(e))?;
+        let payload = serde_json::to_string(&payload).map_err(ServiceError::JsonParse)?;
 
         let resp = self.sdk.read(
             &ctx,
