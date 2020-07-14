@@ -32,6 +32,26 @@ const MILLION: u64 = 1_000_000;
 const HUNDRED: u64 = 100;
 static ADMISSION_TOKEN: Bytes = Bytes::from_static(b"governance");
 
+macro_rules! require_admin {
+    ($service: expr, $ctx:expr) => {
+        if !$service.is_admin($ctx) {
+            return ServiceError::NonAuthorized.into();
+        }
+    };
+}
+
+macro_rules! get_info {
+    ($service:expr) => {{
+        let tmp = $service
+            .sdk
+            .get_value::<_, GovernanceInfo>(&INFO_KEY.to_owned());
+        if tmp.is_none() {
+            return ServiceError::MissingInfo.into();
+        }
+        tmp.unwrap()
+    }};
+}
+
 pub struct GovernanceService<SDK> {
     sdk:     SDK,
     profits: Box<dyn StoreMap<Address, u64>>,
@@ -86,59 +106,31 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
     #[cycles(210_00)]
     #[read]
     fn get_govern_info(&self, ctx: ServiceContext) -> ServiceResponse<GovernanceInfo> {
-        if let Some(info) = self
-            .sdk
-            .get_value::<_, GovernanceInfo>(&INFO_KEY.to_owned())
-        {
-            ServiceResponse::from_succeed(info)
-        } else {
-            ServiceResponse::from_error(198, "Missing info".to_owned())
-        }
+        let info = get_info!(self);
+        ServiceResponse::from_succeed(info)
     }
 
     #[cycles(210_00)]
     #[read]
     fn get_tx_failure_fee(&self, ctx: ServiceContext) -> ServiceResponse<u64> {
-        if let Some(info) = self
-            .sdk
-            .get_value::<_, GovernanceInfo>(&INFO_KEY.to_owned())
-        {
-            ServiceResponse::from_succeed(info.tx_failure_fee)
-        } else {
-            ServiceResponse::from_error(198, "Missing info".to_owned())
-        }
+        let info = get_info!(self);
+        ServiceResponse::from_succeed(info.tx_failure_fee)
     }
 
     #[cycles(210_00)]
     #[read]
     fn get_tx_floor_fee(&self, ctx: ServiceContext) -> ServiceResponse<u64> {
-        if let Some(info) = self
-            .sdk
-            .get_value::<_, GovernanceInfo>(&INFO_KEY.to_owned())
-        {
-            ServiceResponse::from_succeed(info.tx_floor_fee)
-        } else {
-            ServiceResponse::from_error(198, "Missing info".to_owned())
-        }
+        let info = get_info!(self);
+        ServiceResponse::from_succeed(info.tx_floor_fee)
     }
 
     #[cycles(210_00)]
     #[write]
     fn set_admin(&mut self, ctx: ServiceContext, payload: SetAdminPayload) -> ServiceResponse<()> {
-        if !self.is_admin(&ctx) {
-            return ServiceError::NonAuthorized.into();
-        }
+        require_admin!(self, &ctx);
+        let mut info = get_info!(self);
 
-        let mut info = if let Some(tmp) = self
-            .sdk
-            .get_value::<_, GovernanceInfo>(&INFO_KEY.to_owned())
-        {
-            tmp
-        } else {
-            return ServiceResponse::from_error(198, "Missing info".to_owned());
-        };
         info.admin = payload.admin.clone();
-
         self.sdk.set_value(INFO_KEY.to_owned(), info);
 
         let event = SetAdminEvent {
@@ -154,9 +146,7 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
         ctx: ServiceContext,
         payload: SetGovernInfoPayload,
     ) -> ServiceResponse<()> {
-        if !self.is_admin(&ctx) {
-            return ServiceError::NonAuthorized.into();
-        }
+        require_admin!(self, &ctx);
 
         let mut info = payload.inner;
         info.tx_fee_discount.sort();
@@ -173,9 +163,7 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
         ctx: ServiceContext,
         payload: MinerChargeConfig,
     ) -> ServiceResponse<()> {
-        if ctx.get_caller() != payload.address {
-            return ServiceResponse::from_error(103, "Can only set own miner address".to_owned());
-        }
+        require_admin!(self, &ctx);
 
         self.miners.insert(
             payload.address.clone(),
@@ -192,9 +180,7 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
         ctx: ServiceContext,
         payload: UpdateMetadataPayload,
     ) -> ServiceResponse<()> {
-        if !self.is_admin(&ctx) {
-            return ServiceError::NonAuthorized.into();
-        }
+        require_admin!(self, &ctx);
 
         if let Err(err) = self.write_metadata(&ctx, payload.clone()) {
             return err;
@@ -214,9 +200,7 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
         ctx: ServiceContext,
         payload: UpdateValidatorsPayload,
     ) -> ServiceResponse<()> {
-        if !self.is_admin(&ctx) {
-            return ServiceError::NonAuthorized.into();
-        }
+        require_admin!(self, &ctx);
 
         let mut metadata = match self.get_metadata(&ctx) {
             Ok(m) => m,
@@ -242,9 +226,7 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
         ctx: ServiceContext,
         payload: UpdateIntervalPayload,
     ) -> ServiceResponse<()> {
-        if !self.is_admin(&ctx) {
-            return ServiceError::NonAuthorized.into();
-        }
+        require_admin!(self, &ctx);
 
         let mut metadata = match self.get_metadata(&ctx) {
             Ok(m) => m,
@@ -270,9 +252,7 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
         ctx: ServiceContext,
         payload: UpdateRatioPayload,
     ) -> ServiceResponse<()> {
-        if !self.is_admin(&ctx) {
-            return ServiceError::NonAuthorized.into();
-        }
+        require_admin!(self, &ctx);
 
         let mut metadata = match self.get_metadata(&ctx) {
             Ok(m) => m,
@@ -308,7 +288,7 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
             if let Some(profit_sum) = profit.checked_add(new_profit) {
                 self.profits.insert(address.clone(), profit_sum);
             } else {
-                return ServiceResponse::from_error(101, "profit overflow".to_owned());
+                return ServiceError::Overflow.into();
             }
         } else {
             self.profits.insert(address.clone(), new_profit);
@@ -339,6 +319,7 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
         profit_sum
     }
 
+    // FIXME: expect and unwrap
     #[tx_hook_before]
     fn pledge_fee(&mut self, ctx: ServiceContext) {
         let info: GovernanceInfo = self
@@ -360,11 +341,11 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
     #[tx_hook_after]
     fn deduct_fee(&mut self, ctx: ServiceContext) {
         let tx_fee = if let Ok(res) = self.calc_tx_fee(&ctx) {
-            res 
+            res
         } else {
             return;
         };
-        
+
         if tx_fee == 0 {
             return;
         }
@@ -435,7 +416,7 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
         let _ = self.hook_transfer_from(&ServiceContext::new(ctx_params), payload);
     }
 
-    fn calc_tx_fee(&mut self, ctx: &ServiceContext) -> Result<i128, (u64, String)> {
+    fn calc_tx_fee(&mut self, ctx: &ServiceContext) -> Result<i128, ServiceError> {
         if ctx.canceled() {
             return Ok(0i128);
         }
@@ -443,13 +424,13 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
         let info: GovernanceInfo = self
             .sdk
             .get_value(&INFO_KEY.to_owned())
-            .ok_or_else(|| (198, "Missing admin".to_string()))?;
+            .ok_or_else(|| ServiceError::NonAuthorized)?;
 
         let profit = self.calc_profit_records(ctx);
         let fee: u64 = (profit as u128 * info.profit_deduct_rate_per_million as u128
             / MILLION as u128)
             .try_into()
-            .map_err(|_| (199, "overflow".to_string()))?;
+            .map_err(|_| ServiceError::Overflow)?;
 
         let fee = self
             .calc_discount_fee(ctx, fee, &info.tx_fee_discount)?
@@ -463,9 +444,8 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
         ctx: &ServiceContext,
         origin_fee: u64,
         discount_level: &[DiscountLevel],
-    ) -> Result<u64, (u64, String)> {
+    ) -> Result<u64, ServiceError> {
         let mut discount = HUNDRED;
-
         let balance = self.get_balance(ctx)?;
 
         for level in discount_level.iter().rev() {
@@ -477,7 +457,7 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
 
         let fee: u64 = (origin_fee as u128 * discount as u128 / HUNDRED as u128)
             .try_into()
-            .map_err(|_| (199, "overflow".to_string()))?;
+            .map_err(|_| ServiceError::Overflow)?;
         Ok(fee)
     }
 
@@ -487,22 +467,21 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
     }
 
     #[cfg(test)]
-    fn get_balance(&self, _ctx: &ServiceContext) -> Result<u64, (u64, String)> {
+    fn get_balance(&self, _ctx: &ServiceContext) -> Result<u64, ServiceError> {
         Ok(100_000)
     }
 
     #[cfg(not(test))]
-    fn get_balance(&self, ctx: &ServiceContext) -> Result<u64, (u64, String)> {
+    fn get_balance(&self, ctx: &ServiceContext) -> Result<u64, ServiceError> {
         let asset = self
             .get_native_asset(ctx)
-            .map_err(|e| (e.code, e.error_message))?;
+            .map_err(|_| ServiceError::QueryBalance)?;
 
         let payload = GetBalancePayload {
             asset_id: asset.id,
             user:     ctx.get_caller(),
         };
-        let payload =
-            serde_json::to_string(&payload).map_err(|_| (200, "decode json".to_string()))?;
+        let payload = serde_json::to_string(&payload).map_err(|e| ServiceError::JsonParse(e))?;
 
         let resp = self.sdk.read(
             &ctx,
@@ -513,11 +492,11 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
         );
 
         if resp.is_error() {
-            panic!("query balance fails")
+            return Err(ServiceError::QueryBalance);
         }
 
         let balance = serde_json::from_str::<GetBalanceResponse>(resp.succeed_data.as_str())
-            .map_err(|_| (200, "decode json".to_string()))?;
+            .map_err(ServiceError::JsonParse)?;
         Ok(balance.balance)
     }
 
@@ -547,8 +526,6 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
             Ok(j) => j,
             Err(err) => return Err(ServiceError::JsonParse(err).into()),
         };
-
-        println!("{:?}", payload_json);
 
         let resp = self.sdk.write(
             &ctx,
@@ -623,6 +600,15 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
 pub enum ServiceError {
     NonAuthorized,
 
+    #[display(fmt = "Can not get governance info")]
+    MissingInfo,
+
+    #[display(fmt = "calc overflow")]
+    Overflow,
+
+    #[display(fmt = "query balance failed")]
+    QueryBalance,
+
     #[display(fmt = "Parsing payload to json failed {:?}", _0)]
     JsonParse(serde_json::Error),
 }
@@ -632,6 +618,9 @@ impl ServiceError {
         match self {
             ServiceError::NonAuthorized => 101,
             ServiceError::JsonParse(_) => 102,
+            ServiceError::MissingInfo => 103,
+            ServiceError::Overflow => 104,
+            ServiceError::QueryBalance => 105,
         }
     }
 }
