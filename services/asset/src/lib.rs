@@ -44,6 +44,18 @@ macro_rules! require_asset_exists {
     };
 }
 
+macro_rules! get_native_asset {
+    ($service:expr) => {{
+        let res = $service
+            .sdk
+            .get_value::<_, Hash>(&NATIVE_ASSET_KEY.to_owned());
+        if res.is_none() {
+            return ServiceError::NoNativeAsset.into();
+        }
+        res.unwrap()
+    }};
+}
+
 pub struct AssetService<SDK> {
     sdk:    SDK,
     assets: Box<dyn StoreMap<Hash, Asset>>,
@@ -105,9 +117,8 @@ impl<SDK: ServiceSDK> AssetService<SDK> {
     #[cycles(100_00)]
     #[read]
     fn get_native_asset(&self, _ctx: ServiceContext) -> ServiceResponse<Asset> {
-        let asset_id: Hash = self
-            .get_value(&NATIVE_ASSET_KEY.to_owned())
-            .expect("native asset id should not be empty");
+        let asset_id = get_native_asset!(self);
+
         self.read_asset_(&asset_id)
             .map(ServiceResponse::from_succeed)
             .unwrap_or_else(|| ServiceError::AssetNotFound(asset_id).into())
@@ -293,10 +304,7 @@ impl<SDK: ServiceSDK> AssetService<SDK> {
             }
         }
 
-        let asset_id: Hash = self
-            .get_value(&NATIVE_ASSET_KEY.to_owned())
-            .expect("native asset id should not be empty");
-
+        let asset_id = get_native_asset!(self);
         if let Err(err) = self._transfer(
             &payload.sender,
             &payload.recipient,
@@ -610,6 +618,9 @@ pub enum ServiceError {
 
     #[display(fmt = "Asset is not relay-able")]
     NotRelayable,
+
+    #[display(fmt = "Can not get native asset")]
+    NoNativeAsset,
 }
 
 impl ServiceError {
@@ -626,6 +637,7 @@ impl ServiceError {
             ServiceError::Unauthorized => 109,
             ServiceError::Format => 110,
             ServiceError::NotRelayable => 111,
+            ServiceError::NoNativeAsset => 112,
         }
     }
 }

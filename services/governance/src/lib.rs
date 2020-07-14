@@ -302,7 +302,7 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
         ServiceResponse::from_succeed(())
     }
 
-    fn calc_profit_records(&mut self, _ctx: &ServiceContext) -> u64 {
+    fn calc_profit_records(&mut self, _ctx: &ServiceContext) -> Result<u64, ServiceError> {
         let profits = self
             .profits
             .iter()
@@ -310,13 +310,16 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
             .collect::<Vec<_>>();
 
         let mut profit_sum = 0u64;
-
         for (owner, profit) in profits.iter() {
-            profit_sum = profit_sum.checked_add(profit.to_owned()).unwrap();
-            self.profits.insert(owner.clone(), 0);
+            if let Some(tmp) = profit_sum.checked_add(profit.to_owned()) {
+                profit_sum = tmp;
+                self.profits.insert(owner.clone(), 0);
+            } else {
+                return Err(ServiceError::Overflow);
+            }
         }
 
-        profit_sum
+        Ok(profit_sum)
     }
 
     #[tx_hook_before]
@@ -453,7 +456,7 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
             .get_value(&INFO_KEY.to_owned())
             .ok_or_else(|| ServiceError::NonAuthorized)?;
 
-        let profit = self.calc_profit_records(ctx);
+        let profit = self.calc_profit_records(ctx)?;
         let fee: u64 = (profit as u128 * info.profit_deduct_rate_per_million as u128
             / MILLION as u128)
             .try_into()

@@ -178,7 +178,7 @@ fn test_accumulate_profit() {
         }
     );
 
-    assert_eq!(service.calc_profit_records(&context), 6_000_001);
+    assert_eq!(service.calc_profit_records(&context).unwrap(), 6_000_001);
 }
 
 #[test]
