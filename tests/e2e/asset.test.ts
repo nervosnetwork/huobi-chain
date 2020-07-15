@@ -333,20 +333,6 @@ describe('asset service API test via huobi-sdk-js', () => {
     const newService = new AssetService(client, newAccount);
 
     // test mint, change_admin of un-admin
-    const amount = 0x3ab12451;
-    const proof = '0x23311';
-    const memo = 'test memo';
-    const res0 = await newService.write.mint({
-      asset_id: native_asset_id,
-      to: newAccount.address,
-      amount,
-      proof,
-      memo,
-    });
-    expect(Number(res0.response.response.code)).toBe(0x6d);
-    expect(Number(res0.cyclesUsed)).toBe(basic_fee);
-    expect(res0.response.response.errorMessage).toBe('Unauthorized');
-
     const res1 = await newService.write.change_admin({
       addr: newAccount.address,
     });
@@ -360,16 +346,6 @@ describe('asset service API test via huobi-sdk-js', () => {
     });
     expect(Number(res2.response.response.code)).toBe(0);
     expect(Number(res2.cyclesUsed)).toBe(basic_fee);
-
-    // check mint, change_admin
-    const res3 = await newService.write.mint({
-      asset_id: native_asset_id,
-      to: newAccount.address,
-      amount,
-      proof,
-      memo,
-    });
-    expect(Number(res3.response.response.code)).toBe(0);
 
     const res4 = await newService.write.change_admin({
       addr: account.address,
