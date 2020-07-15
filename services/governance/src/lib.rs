@@ -9,7 +9,7 @@ use bytes::Bytes;
 use derive_more::{Display, From};
 use serde::Serialize;
 
-use binding_macro::{cycles, genesis, hook_after, service, tx_hook_after, tx_hook_before};
+use binding_macro::{cycles, genesis, hook_after, service};
 use protocol::traits::{ExecutorParams, ServiceResponse, ServiceSDK, StoreMap};
 use protocol::types::{Address, Metadata, ServiceContext, ServiceContextParams};
 
@@ -58,6 +58,7 @@ pub struct GovernanceService<SDK> {
     miners:  Box<dyn StoreMap<Address, Address>>,
 }
 
+#[allow(dead_code)]
 #[service]
 impl<SDK: ServiceSDK> GovernanceService<SDK> {
     pub fn new(mut sdk: SDK) -> Self {
@@ -322,7 +323,7 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
         Ok(profit_sum)
     }
 
-    #[tx_hook_before]
+    //#[tx_hook_before]
     fn pledge_fee(&mut self, ctx: ServiceContext) -> ServiceResponse<String> {
         let info = self
             .sdk
@@ -355,7 +356,7 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
         ServiceResponse::from_succeed("".to_owned())
     }
 
-    #[tx_hook_after]
+    //#[tx_hook_after]
     fn deduct_fee(&mut self, ctx: ServiceContext) -> ServiceResponse<String> {
         let tx_fee = self.calc_tx_fee(&ctx);
         if tx_fee.is_err() {
