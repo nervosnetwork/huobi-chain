@@ -14,7 +14,6 @@ const basic_fee = 51000;
 const client = new Client({
   defaultCyclesLimit: '0xffffffff',
 });
-// 在测试 asset service 的时候，构造一个转账交易，把余额全取走，没有钱留给交易费，看结果怎么样？
 
 describe('asset service API test via huobi-sdk-js', () => {
   test('test create_asset', async () => {
@@ -376,5 +375,45 @@ describe('asset service API test via huobi-sdk-js', () => {
       addr: account.address,
     });
     expect(Number(res4.response.response.code)).toBe(0);
+  });
+
+  test('test drain transfer', async () => {
+    const service = new AssetService(client, account);
+    const newAccount = Account.fromPrivateKey(
+      '0x45c56be699dca666191ad3446897e0f480da234da896270202514a0e1a587c3f',
+    );
+
+    // transfer
+    const value = 0xfffff;
+    const res0 = await service.write.transfer({
+      asset_id: native_asset_id,
+      to: newAccount.address,
+      value,
+      memo: 'transfer',
+    });
+    expect(Number(res0.response.response.code)).toBe(0);
+
+    // get balance
+    const res1 = await service.read.get_balance({
+      asset_id: native_asset_id,
+      user: newAccount.address,
+    });
+    let balance = Number(res1.succeedData.balance);
+
+    // drain transfer
+    const newService = new AssetService(client, newAccount);
+    const res2 = await newService.write.transfer({
+      asset_id: native_asset_id,
+      to: account.address,
+      value: balance,
+      memo: 'test drain transfer',
+    });
+    console.log(res2);
+
+    const res3 = await service.read.get_balance({
+      asset_id: native_asset_id,
+      user: newAccount.address,
+    });
+    console.log(res3);
   });
 });

@@ -76,6 +76,14 @@ export function genRandomStrings(size: number = 3, prefix: String = 't', length:
   return names;
 }
 
+export function genRandomAccount() {
+  const randomPriKey = randomString.generate({
+    charset: '0123456789abcdef',
+    length: 64,
+  });
+  return Account.fromPrivateKey('0x' + randomPriKey);
+}
+
 export {
   accounts, admin, client, feeAssetID, feeAccount, hexToNum
 };
