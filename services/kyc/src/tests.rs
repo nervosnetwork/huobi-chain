@@ -1,7 +1,8 @@
 use crate::{
     types::{
-        ChangeOrgAdmin, ChangeOrgApproved, EvalUserTagExpression, FixedTagList, Genesis,
-        GetUserTags, NewOrgEvent, OrgName, RegisterNewOrg, TagName, UpdateUserTags, Validate,
+        ChangeOrgAdmin, ChangeOrgApproved, ChangeServiceAdmin, EvalUserTagExpression, FixedTagList,
+        Genesis, GetUserTags, NewOrgEvent, OrgName, RegisterNewOrg, TagName, UpdateUserTags,
+        Validate,
     },
     ExpressionDataFeed, KycService, ServiceError, UpdateOrgSupportTags,
 };
@@ -17,7 +18,6 @@ use protocol::{
     types::{Address, ServiceContext, ServiceContextParams},
 };
 
-use crate::types::ChangeServiceAdmin;
 use std::{
     cell::RefCell,
     collections::HashMap,

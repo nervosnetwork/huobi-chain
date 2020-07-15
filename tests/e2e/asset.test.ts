@@ -2,8 +2,9 @@
 import { Account } from '@mutadev/account';
 import { Client } from '@mutadev/client';
 import { BigNumber } from '@mutadev/shared';
+import { Address } from '@mutadev/types';
 import { AssetService } from 'huobi-chain-sdk';
-import { genRandomString } from './utils';
+import { genRandomString, genRandomAccount } from './utils';
 
 const account = Account.fromPrivateKey(
   '0x2b672bb959fa7a852d7259b129b65aee9c83b39f427d6f7bded1f58c4c9310c2',
@@ -14,23 +15,22 @@ const basic_fee = 51000;
 const client = new Client({
   defaultCyclesLimit: '0xffffffff',
 });
+const assetService = new AssetService(client, account);
 
-describe('asset service API test via huobi-sdk-js', () => {
-  test('test create_asset', async () => {
-    const service = new AssetService(client, account);
-    const name = genRandomString('c', 20);
-    const symbol = genRandomString('S', 5);
-    const supply = 0xfffffffffff;
-    const precision = 18;
-    const relayable = false;
-    const res0 = await service.write.create_asset({
-      name,
-      symbol,
-      supply,
-      precision,
-      relayable,
-    });
-    expect(Number(res0.response.response.code)).toBe(0);
+async function create_asset(service = assetService, expectCode = 0, relayable = false, nameLen = 20, symbolLen = 8, supply = 0xfffffffffff, precision = 18) {
+  const name = genRandomString('c', nameLen);
+  const symbol = genRandomString('S', symbolLen);
+  const res0 = await service.write.create_asset({
+    name,
+    symbol,
+    supply,
+    precision,
+    relayable,
+  });
+  const code = Number(res0.response.response.code);
+  expect(Number(res0.response.response.code)).toBe(expectCode);
+
+  if(code == 0) {
     expect(Number(res0.cyclesUsed)).toBe(basic_fee);
     const asset = res0.response.response.succeedData;
     expect(asset.name).toBe(name);
@@ -48,348 +48,297 @@ describe('asset service API test via huobi-sdk-js', () => {
     expect(data.supply).toBe(supply);
     expect(data.precision).toBe(precision);
     expect(data.relayable).toBe(relayable);
+
+    return asset_id;
+  } else {
+    return 'null';
+  }
+}
+
+async function get_supply(assetId: string) {
+  const res = await assetService.read.get_asset({
+    id: assetId,
+  });
+  return new BigNumber(res.succeedData.supply);
+}
+
+async function get_native_supply() {
+  return await get_supply(native_asset_id);
+}
+
+async function get_balance(assetId: string, user: Address) {
+  const res0 = await assetService.read.get_balance({
+    asset_id: assetId,
+    user,
+  });
+  expect(Number(res0.code)).toBe(0);
+  expect(res0.succeedData.asset_id).toBe(assetId);
+  expect(res0.succeedData.user).toBe(user);
+  return new BigNumber(res0.succeedData.balance);
+}
+
+async function get_native_balance(user: Address) {
+  return await get_balance(native_asset_id, user);
+}
+
+async function get_allowance(assetId: string, grantor: Address, grantee: Address) {
+  const res0 = await assetService.read.get_allowance({
+    asset_id: assetId,
+    grantor,
+    grantee,
+  });
+  expect(Number(res0.code)).toBe(0);
+  return new BigNumber(res0.succeedData.value);
+}
+
+async function get_native_allowance(grantor: Address, grantee: Address) {
+  return await get_allowance(native_asset_id, grantor, grantee);
+}
+
+async function transfer(assetId: string, to: Address, value: number, service = assetService, expectCode = 0) {
+  const res = await service.write.transfer({
+    asset_id: assetId,
+    to,
+    value,
+    memo: 'transfer',
+  });
+  const code = Number(res.response.response.code);
+  expect(code).toBe(expectCode);
+  expect(Number(res.cyclesUsed)).toBe(basic_fee);
+}
+
+async function native_transfer(to: Address, value: number, service = assetService, expectCode = 0) {
+  return await transfer(native_asset_id, to, value, service, expectCode);
+}
+
+async function approve(assetId: string, to: Address, value: number, service = assetService, expectCode = 0) {
+  const res = await service.write.approve({
+    asset_id: assetId,
+    to,
+    value,
+    memo: 'approve',
+  });
+  const code = Number(res.response.response.code);
+  expect(Number(res.cyclesUsed)).toBe(basic_fee);
+  expect(code).toBe(expectCode);
+  if(code == 0) {
+    const data = JSON.parse(res.events[0].data);
+    expect(data.asset_id).toBe(assetId);
+    expect(data.grantee).toBe(to);
+    expect(data.value).toBe(value);
+  }
+}
+
+async function native_approve(to: Address, value: number, service = assetService, expectCode = 0) {
+  return await approve(native_asset_id, to, value, service, expectCode)
+}
+
+async function transfer_from(assetId: string, sender: Address, recipient: Address, value: number, service = assetService, expectCode = 0) {
+  const res = await service.write.transfer_from({
+    asset_id: assetId,
+    sender,
+    recipient,
+    value,
+    memo: 'transfer_from',
+  });
+  const code = Number(res.response.response.code);
+  expect(Number(res.response.response.code)).toBe(expectCode);
+  expect(Number(res.cyclesUsed)).toBe(basic_fee);
+  if(code == 0) {
+    const data = JSON.parse(res.events[0].data);
+    expect(data.asset_id).toBe(assetId);
+    expect(data.sender).toBe(sender);
+    expect(data.recipient).toBe(recipient);
+    expect(data.value).toBe(value);
+  }
+}
+
+async function native_transfer_from(sender: Address, recipient: Address, value: number, service = assetService, expectCode = 0) {
+  return await transfer_from(native_asset_id, sender, recipient, value, service, expectCode);
+}
+
+async function burn(assetId: string, amount: number, service = assetService, expectCode = 0) {
+  const res1 = await service.write.burn({
+    asset_id: assetId,
+    amount,
+    proof: '0x23311',
+    memo: 'burn',
+  });
+  const code = Number(res1.response.response.code);
+  expect(code).toBe(expectCode);
+  expect(Number(res1.cyclesUsed)).toBe(basic_fee);
+  if(code == 0) {
+    const data = JSON.parse(res1.events[0].data);
+    expect(data.asset_id).toBe(assetId);
+    expect(Number(data.amount)).toBe(amount);
+  }
+}
+
+async function native_burn(amount: number, service = assetService, expectCode = 0) {
+  return await burn(native_asset_id, amount, service, expectCode);
+}
+
+async function mint(assetId: string, to: Address, amount: number, service = assetService, expectCode = 0) {
+  const res1 = await service.write.mint({
+    asset_id: assetId,
+    to,
+    amount,
+    proof: '0x23311',
+    memo: 'mint',
+  });
+  const code = Number(res1.response.response.code);
+  expect(code).toBe(expectCode);
+  expect(Number(res1.cyclesUsed)).toBe(basic_fee);
+  if(code == 0) {
+    const data = JSON.parse(res1.events[0].data);
+    expect(data.asset_id).toBe(assetId);
+    expect(data.to).toBe(to);
+    expect(Number(data.amount)).toBe(amount);
+  }
+}
+
+async function native_mint(to: Address, amount: number, service = assetService, expectCode = 0) {
+  return await mint(native_asset_id, to, amount, service, expectCode);
+}
+
+async function relay(assetId: string, amount: number, service = assetService, expectCode = 0) {
+  const res1 = await service.write.relay({
+    asset_id: assetId,
+    amount,
+    proof: '0x23311',
+    memo: 'burn',
+  });
+  const code = Number(res1.response.response.code);
+  expect(code).toBe(expectCode);
+  if(code == 0) {
+    expect(Number(res1.cyclesUsed)).toBe(basic_fee + 21000);
+  } else {
+    expect(Number(res1.cyclesUsed)).toBe(basic_fee);
+  }
+  if(code == 0) {
+    const data = JSON.parse(res1.events[0].data);
+    expect(data.asset_id).toBe(assetId);
+    expect(Number(data.amount)).toBe(amount);
+  }
+}
+
+async function native_relay(amount: number, service = assetService, expectCode = 0) {
+  return await relay(native_asset_id, amount, service, expectCode);
+}
+
+async function change_admin(addr: Address, service = assetService, expectCode = 0) {
+  const res1 = await service.write.change_admin({
+    addr,
+  });
+  expect(Number(res1.response.response.code)).toBe(expectCode);
+  expect(Number(res1.cyclesUsed)).toBe(basic_fee);
+}
+
+describe('asset service API test via huobi-sdk-js', () => {
+  test('test create_asset', async () => {
+    await create_asset();
   });
 
   test('test transfer', async () => {
-    const newAccount = Account.fromPrivateKey(
-      '0x45c56be699dca666191ad3446897e0f480da234da896270202514a0e1a587c3f',
-    );
-    const service = new AssetService(client, account);
-
-    const res0 = await service.read.get_balance({
-      asset_id: native_asset_id,
-      user: newAccount.address,
-    });
-    expect(Number(res0.code)).toBe(0);
-    expect(res0.succeedData.asset_id).toBe(native_asset_id);
-    expect(res0.succeedData.user).toBe(newAccount.address);
-    const balance_a = Number(res0.succeedData.balance);
-
-    const res1 = await service.read.get_balance({
-      asset_id: native_asset_id,
-      user: account.address,
-    });
-    expect(Number(res1.code)).toBe(0);
-    const balance_b = Number(res1.succeedData.balance);
-
+    const newAccount = genRandomAccount();
+    const balance_before = await get_native_balance(newAccount.address);
     const value = 0xfffff;
-    const res2 = await service.write.transfer({
-      asset_id: native_asset_id,
-      to: newAccount.address,
-      value,
-      memo: 'test',
-    });
-    expect(Number(res2.response.response.code)).toBe(0);
-    expect(Number(res2.cyclesUsed)).toBe(basic_fee);
-
-    const res3 = await service.read.get_balance({
-      asset_id: native_asset_id,
-      user: newAccount.address,
-    });
-    expect(Number(res3.code)).toBe(0);
-
+    await native_transfer(newAccount.address, value);
     // check balance
-    const balance_add = Number(res3.succeedData.balance) - balance_a;
-    expect(balance_add).toBe(value);
-
-    const res4 = await service.read.get_balance({
-      asset_id: native_asset_id,
-      user: account.address,
-    });
-    expect(Number(res4.code)).toBe(0);
-    const balance_sub = balance_b - Number(res4.succeedData.balance);
-    console.log(balance_sub);
-//     expect(balance_sub).toBe(value + basic_fee);
+    const balance_after = await get_native_balance(newAccount.address);
+    expect(balance_after.minus(balance_before).eq(value)).toBe(true);
   });
 
   test('test approve and transfer_from', async () => {
-    const account1 = Account.fromPrivateKey(
-      '0x45c56be699dca666191ad3446897e0f480da234da896270202514a0e1a587c3f',
-    );
-    const account2 = Account.fromPrivateKey(
-      '0x16f55be689dca766191ad3446897e0f480da2222a89626020251411e1a587c5a',
-    );
-    const service = new AssetService(client, account);
-    // require balance
-    const res2 = await service.read.get_balance({
-      asset_id: native_asset_id,
-      user: account2.address,
-    });
-    const balance_before = Number(res2.succeedData.balance);
-
+    const account1 = genRandomAccount();
+    const service1 = new AssetService(client, account1);
+    const account2 = genRandomAccount();
+    // transfer
+    await native_transfer(account1.address, 0xffff1111);
     // approve
     const value0 = 0xfffff;
-    const memo = 'approve_test';
-    const res3 = await service.write.approve({
-      asset_id: native_asset_id,
-      to: account1.address,
-      value: value0,
-      memo,
-    });
-    expect(Number(res3.response.response.code)).toBe(0);
-    expect(Number(res3.cyclesUsed)).toBe(basic_fee);
-    const data = JSON.parse(res3.events[0].data);
-    expect(data.asset_id).toBe(native_asset_id);
-    expect(data.grantor).toBe(account.address);
-    expect(data.grantee).toBe(account1.address);
-    expect(data.value).toBe(value0);
-    expect(data.memo).toBe(memo);
-
+    await native_approve(account1.address, value0);
     // get_allowance
-    const res4 = await service.read.get_allowance({
-      asset_id: native_asset_id,
-      grantor: account.address,
-      grantee: account1.address,
-    });
-    expect(Number(res4.code)).toBe(0);
-    expect(Number(res4.succeedData.value)).toBe(value0);
-
+    const al_before = await get_native_allowance(account.address, account1.address);
+    expect(al_before.minus(value0).eq(0)).toBe(true);
     // transfer_from
-    const memo1 = 'transfer_from test';
     const value1 = 0x65a41;
-    const service1 = new AssetService(client, account1);
-    const res5 = await service1.write.transfer_from({
-      asset_id: native_asset_id,
-      sender: account.address,
-      recipient: account2.address,
-      value: value1,
-      memo: memo1,
-    });
-    expect(Number(res5.response.response.code)).toBe(0);
-    expect(Number(res5.cyclesUsed)).toBe(basic_fee);
-    const data1 = JSON.parse(res5.events[0].data);
-    expect(data1.asset_id).toBe(native_asset_id);
-    expect(data1.caller).toBe(account1.address);
-    expect(data1.sender).toBe(account.address);
-    expect(data1.recipient).toBe(account2.address);
-    expect(data1.value).toBe(value1);
-    expect(data1.memo).toBe(memo1);
-
+    await native_transfer_from(account.address, account2.address, value1, service1);
     // check balance
-    const res6 = await service.read.get_allowance({
-      asset_id: native_asset_id,
-      grantor: account.address,
-      grantee: account1.address,
-    });
-    expect(Number(res6.code)).toBe(0);
-    expect(Number(res6.succeedData.value)).toBe(value0 - value1);
-
-    const res7 = await service.read.get_balance({
-      asset_id: native_asset_id,
-      user: account2.address,
-    });
-    const balance_after = Number(res7.succeedData.balance);
-    expect(balance_after - balance_before).toBe(value1);
+    const al_after = await get_native_allowance(account.address, account1.address);
+    expect(al_before.minus(al_after).eq(value1)).toBe(true);
+    const balance = await get_native_balance(account2.address);
+    expect(balance.eq(value1)).toBe(true);
   });
 
   test('test mint', async () => {
-    const service = new AssetService(client, account);
-    const newAccount = Account.fromPrivateKey(
-      '0x45c56be699dca666191ad3446897e0f480da234da896270202514a0e1a587c3f',
-    );
-    // require balance
-    const res0 = await service.read.get_balance({
-      asset_id: native_asset_id,
-      user: newAccount.address,
-    });
-    const balance_before = Number(res0.succeedData.balance);
-
-    const res01 = await service.read.get_native_asset();
-    const supply_before = new BigNumber(res01.succeedData.supply);
-
+    const newAccount = genRandomAccount();
+    const newService = new AssetService(client, newAccount);
+    // transfer
+    const value = 0xfffffffff;
+    await native_transfer(newAccount.address, value);
+    // query balance
+    const balance_before = await get_native_balance(newAccount.address);
+    const supply_before = await get_native_supply();
     // mint
-    const amount = 0x3ab12451;
-    const proof = '0x23311';
-    const memo = 'test memo';
-    const res1 = await service.write.mint({
-      asset_id: native_asset_id,
-      to: newAccount.address,
-      amount,
-      proof,
-      memo,
-    });
-    expect(Number(res1.response.response.code)).toBe(0);
-    expect(Number(res1.cyclesUsed)).toBe(basic_fee);
-    const data = JSON.parse(res1.events[0].data);
-    expect(data.asset_id).toBe(native_asset_id);
-    expect(data.to).toBe(newAccount.address);
-    expect(Number(data.amount)).toBe(amount);
-    expect(data.proof).toBe(proof);
-    expect(data.memo).toBe(memo);
-
+    const amount = 0x652a1fff;
+    await native_mint(newAccount.address, amount, newService, 0x6d);
+    await native_mint(newAccount.address, amount);
     // check balance
-    const res2 = await service.read.get_balance({
-      asset_id: native_asset_id,
-      user: newAccount.address,
-    });
-    const balance_after = Number(res2.succeedData.balance);
-    expect(balance_after - balance_before).toBe(amount);
-
-    // check total_supply
-    const res3 = await service.read.get_native_asset();
-    const supply_after = new BigNumber(res3.succeedData.supply);
+    const balance_after = await get_native_balance(newAccount.address);
+    const supply_after = await get_native_supply();
+    expect(balance_after.minus(balance_before).eq(amount)).toBe(true);
     expect(supply_after.minus(supply_before).eq(amount)).toBe(true);
   });
 
   test('test burn', async () => {
-    const service = new AssetService(client, account);
-    // require balance
-    const res0 = await service.read.get_balance({
-      asset_id: native_asset_id,
-      user: account.address,
-    });
-    const balance_before = new BigNumber(res0.succeedData.balance);
-
-    const res01 = await service.read.get_native_asset();
-    const supply_before = new BigNumber(res01.succeedData.supply);
-
+    const newAccount = genRandomAccount();
+    const newService = new AssetService(client, newAccount);
+    // transfer
+    const value = 0xfffffffff;
+    await native_transfer(newAccount.address, value);
+    // query balance
+    const balance_before = await get_native_balance(newAccount.address);
+    const supply_before = await get_native_supply();
     // burn
-    const amount = 0x3ab12451;
-    const proof = '0x23311';
-    const memo = 'test memo';
-    const res1 = await service.write.burn({
-      asset_id: native_asset_id,
-      amount,
-      proof,
-      memo,
-    });
-    expect(Number(res1.response.response.code)).toBe(0);
-    expect(Number(res1.cyclesUsed)).toBe(basic_fee);
-    const data = JSON.parse(res1.events[0].data);
-    expect(data.asset_id).toBe(native_asset_id);
-    expect(data.from).toBe(account.address);
-    expect(Number(data.amount)).toBe(amount);
-    expect(data.proof).toBe(proof);
-    expect(data.memo).toBe(memo);
-
+    const amount = 0x652a1fff;
+    await native_burn(amount, newService);
     // check balance
-    const res2 = await service.read.get_balance({
-      asset_id: native_asset_id,
-      user: account.address,
-    });
-    const balance_after = new BigNumber(res2.succeedData.balance);
+    const balance_after = await get_native_balance(newAccount.address);
+    const supply_after = await get_native_supply();
     expect(balance_before.minus(balance_after).eq(amount)).toBe(true);
-
-    // check total_supply
-    const res3 = await service.read.get_native_asset();
-    const supply_after = new BigNumber(res3.succeedData.supply);
-    console.log(supply_after);
     expect(supply_before.minus(supply_after).eq(amount)).toBe(true);
   });
 
   test('test relay', async () => {
-    const service = new AssetService(client, account);
-    const name = genRandomString('c', 20);
-    const symbol = genRandomString('S', 5);
-    const res0 = await service.write.create_asset({
-      name,
-      symbol,
-      supply: 0xfffffffffff,
-      precision: 18,
-      relayable: false,
-    });
-    expect(Number(res0.response.response.code)).toBe(0);
-    const asset_id = res0.response.response.succeedData.id;
-
+    const asset_id_1 = await create_asset();
     // test relay of unrelayable asset
     const amount = 0x3ab12451;
-    const proof = '0x23311';
-    const memo = 'test relay';
-    const res1 = await service.write.relay({
-      asset_id,
-      amount,
-      proof,
-      memo,
-    });
-    expect(Number(res1.response.response.code)).toBe(0x6f);
-    expect(Number(res1.cyclesUsed)).toBe(basic_fee);
-    expect(res1.response.response.errorMessage).toBe('Asset is not relay-able');
-
+    await relay(asset_id_1, amount, assetService, 0x6f);
     // test relay of relayable asset
-    const res2 = await service.write.create_asset({
-      name,
-      symbol,
-      supply: 0xfffffffffff,
-      precision: 18,
-      relayable: true,
-    });
-    expect(Number(res2.response.response.code)).toBe(0);
-    const asset_id2 = res2.response.response.succeedData.id;
-
-    const res3 = await service.write.relay({
-      asset_id: asset_id2,
-      amount,
-      proof,
-      memo,
-    });
-    expect(Number(res3.response.response.code)).toBe(0);
+    await native_relay(amount);
   });
 
   test('test change_admin', async () => {
-    const service = new AssetService(client, account);
-    const newAccount = Account.fromPrivateKey(
-      '0x45c56be699dca666191ad3446897e0f480da234da896270202514a0e1a587c3f',
-    );
+    const newAccount = genRandomAccount();
     const newService = new AssetService(client, newAccount);
-
-    // test mint, change_admin of un-admin
-    const res1 = await newService.write.change_admin({
-      addr: newAccount.address,
-    });
-    expect(Number(res1.response.response.code)).toBe(0x6d);
-    expect(Number(res1.cyclesUsed)).toBe(basic_fee);
-    expect(res1.response.response.errorMessage).toBe('Unauthorized');
-
+    // transfer
+    await native_transfer(newAccount.address, 0xfff26635);
     // change_admin
-    const res2 = await service.write.change_admin({
-      addr: newAccount.address,
-    });
-    expect(Number(res2.response.response.code)).toBe(0);
-    expect(Number(res2.cyclesUsed)).toBe(basic_fee);
-
-    const res4 = await newService.write.change_admin({
-      addr: account.address,
-    });
-    expect(Number(res4.response.response.code)).toBe(0);
+    await change_admin(newAccount.address, newService, 0x6d);
+    // change_admin
+    await change_admin(newAccount.address);
+    // check mint, change_admin
+    await change_admin(account.address, newService);
   });
 
   test('test drain transfer', async () => {
-    const service = new AssetService(client, account);
-    const newAccount = Account.fromPrivateKey(
-      '0x45c56be699dca666191ad3446897e0f480da234da896270202514a0e1a587c3f',
-    );
-
+    const newAccount = genRandomAccount();
     // transfer
     const value = 0xfffff;
-    const res0 = await service.write.transfer({
-      asset_id: native_asset_id,
-      to: newAccount.address,
-      value,
-      memo: 'transfer',
-    });
-    expect(Number(res0.response.response.code)).toBe(0);
-
-    // get balance
-    const res1 = await service.read.get_balance({
-      asset_id: native_asset_id,
-      user: newAccount.address,
-    });
-    let balance = Number(res1.succeedData.balance);
-
+    await native_transfer(newAccount.address, value);
     // drain transfer
     const newService = new AssetService(client, newAccount);
-    const res2 = await newService.write.transfer({
-      asset_id: native_asset_id,
-      to: account.address,
-      value: balance,
-      memo: 'test drain transfer',
-    });
-    console.log(res2);
-
-    const res3 = await service.read.get_balance({
-      asset_id: native_asset_id,
-      user: newAccount.address,
-    });
-    console.log(res3);
+    await native_transfer(account.address, value, newService);
   });
 });
