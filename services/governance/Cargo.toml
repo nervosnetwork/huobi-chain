@@ -1,6 +1,6 @@
 [package]
 name = "governance"
-version = "0.4.0-beta2"
+version = "0.4.0-Alpha"
 authors = ["Muta Dev <muta@nervos.org>"]
 edition = "2018"
 
