@@ -7,7 +7,7 @@ pipelineConfig:
           image: mutadev/muta-build-env:v0.3.0
         options:
           timeout:
-            time: 180 # 3H
+            time: 180 # 2H
             unit: minutes
         stages:
           - name: chaos
@@ -52,6 +52,7 @@ pipelineConfig:
                 args:
                   - build
                   - --release
+
               - name: push-image
                 image: gcr.io/kaniko-project/executor:9912ccbf8d22bbafbf971124600fbb0b13b9cbd6
                 command: /kaniko/executor
@@ -73,10 +74,10 @@ pipelineConfig:
                   - size=${NODE_SIZE},repo_name=${REPO_NAME},version=pr-${PULL_NUMBER}-${BUILD_NUMBER},resources.cpu=1100m,resources.memory=8Gi,chain_genesis.metadata.timeout_gap=${CHAIN_GENESIS_TIMEOUT_GAP}
               
               - name: watchdog
-                image: mutadev/huobi-watchdog:v0.1.0
+                image: mutadev/huobi-watchdog:v0.1.10
                 env:
                   - name: WATCH_DURATION
-                    value: 1h
+                    value: 1H
                   - name: APP_NAMESPACE
                     value: mutadev
                   - name: APP_PORT
