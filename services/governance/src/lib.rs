@@ -588,9 +588,13 @@ impl<SDK: ServiceSDK> GovernanceService<SDK> {
             Err(err) => return Err(ServiceError::JsonParse(err).into()),
         };
 
-        let resp = self
-            .sdk
-            .write(&ctx, None, "asset", "hook_transfer_from", &payload_json);
+        let resp = self.sdk.write(
+            &ctx,
+            Some(Bytes::from_static(b"governance")),
+            "asset",
+            "hook_transfer_from",
+            &payload_json,
+        );
 
         if resp.is_error() {
             Err(ServiceResponse::from_error(resp.code, resp.error_message))

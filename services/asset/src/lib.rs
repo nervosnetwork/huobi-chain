@@ -304,7 +304,7 @@ impl<SDK: ServiceSDK> AssetService<SDK> {
         Self::emit_event(&ctx, "TransferFrom".to_owned(), event)
     }
 
-    #[cycles(210_00)]
+    #[cycles(0)]
     #[write]
     fn hook_transfer_from(
         &mut self,
@@ -315,6 +315,8 @@ impl<SDK: ServiceSDK> AssetService<SDK> {
             if admin_key != Bytes::from_static(b"governance") {
                 return ServiceError::Unauthorized.into();
             }
+        } else {
+            return ServiceError::Unauthorized.into();
         }
 
         let asset_id = get_native_asset!(self);
