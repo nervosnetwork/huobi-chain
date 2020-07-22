@@ -137,10 +137,10 @@ impl<SDK: ServiceSDK> AssetService<SDK> {
     #[cycles(10_000)]
     #[read]
     fn get_admin(&self, ctx: ServiceContext, asset_id: Hash) -> ServiceResponse<Address> {
-        require_asset_exists!(self, asset_id.clone());
+        require_asset_exists!(self, asset_id);
 
         // It is impossible to panic!
-        let ret = self.assets.get(&asset_id).unwrap().admin.clone();
+        let ret = self.assets.get(&asset_id).unwrap().admin;
         ServiceResponse::from_succeed(ret)
     }
 
@@ -201,7 +201,7 @@ impl<SDK: ServiceSDK> AssetService<SDK> {
         }
 
         let asset = Asset {
-            id:        asset_id.clone(),
+            id:        asset_id,
             name:      payload.name,
             symbol:    payload.symbol,
             admin:     payload.admin,
@@ -571,11 +571,7 @@ impl<SDK: ServiceSDK> AssetService<SDK> {
 
     #[cfg(test)]
     fn admin(&self, asset_id: &Hash) -> Address {
-        self.assets
-            .get(asset_id)
-            .expect("admin not found")
-            .admin
-            .clone()
+        self.assets.get(asset_id).expect("admin not found").admin
     }
 
     fn emit_event<T: Serialize>(

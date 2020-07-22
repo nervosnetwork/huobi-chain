@@ -229,7 +229,7 @@ fn test_mint() {
         memo:     "".to_owned(),
     };
     let ctx_admin = mock_context(TestService::admin());
-    let minted = service.mint(ctx.clone(), asset_to_mint.clone());
+    let minted = service.mint(ctx, asset_to_mint.clone());
     assert!(minted.is_error(), "mint require admin permission");
 
     service_call!(service, mint, ctx_admin.clone(), asset_to_mint);
@@ -334,7 +334,7 @@ fn test_unrelayable() {
             admin:      Address::from_hex(ADMIN).unwrap(),
             supply:     10000,
             init_mints: vec![IssuerWithBalance {
-                addr:    Address::from_hex(ADMIN.clone()).unwrap(),
+                addr:    Address::from_hex(<&str>::clone(&ADMIN)).unwrap(),
                 balance: 10000,
             }],
             precision:  100,
@@ -388,7 +388,7 @@ fn test_check_format() {
         admin:      Address::from_hex(ADMIN).unwrap(),
         supply:     10000,
         init_mints: vec![IssuerWithBalance {
-            addr:    Address::from_hex(ADMIN.clone()).unwrap(),
+            addr:    Address::from_hex(<&str>::clone(&ADMIN)).unwrap(),
             balance: 10000,
         }],
         precision:  100,
@@ -403,7 +403,7 @@ fn test_check_format() {
         admin:      Address::from_hex(ADMIN).unwrap(),
         supply:     10000,
         init_mints: vec![IssuerWithBalance {
-            addr:    Address::from_hex(ADMIN.clone()).unwrap(),
+            addr:    Address::from_hex(<&str>::clone(&ADMIN)).unwrap(),
             balance: 10000,
         }],
         precision:  100,
@@ -418,7 +418,7 @@ fn test_check_format() {
         admin:      Address::from_hex(ADMIN).unwrap(),
         supply:     10000,
         init_mints: vec![IssuerWithBalance {
-            addr:    Address::from_hex(ADMIN.clone()).unwrap(),
+            addr:    Address::from_hex(<&str>::clone(&ADMIN)).unwrap(),
             balance: 10000,
         }],
         precision:  100,
@@ -433,7 +433,7 @@ fn test_check_format() {
         admin:      Address::from_hex(ADMIN).unwrap(),
         supply:     10000,
         init_mints: vec![IssuerWithBalance {
-            addr:    Address::from_hex(ADMIN.clone()).unwrap(),
+            addr:    Address::from_hex(<&str>::clone(&ADMIN)).unwrap(),
             balance: 10000,
         }],
         precision:  100,
@@ -448,7 +448,7 @@ fn test_check_format() {
         admin:      Address::from_hex(ADMIN).unwrap(),
         supply:     10000,
         init_mints: vec![IssuerWithBalance {
-            addr:    Address::from_hex(ADMIN.clone()).unwrap(),
+            addr:    Address::from_hex(<&str>::clone(&ADMIN)).unwrap(),
             balance: 10000,
         }],
         precision:  100,
@@ -463,7 +463,7 @@ fn test_check_format() {
         admin:      Address::from_hex(ADMIN).unwrap(),
         supply:     10000,
         init_mints: vec![IssuerWithBalance {
-            addr:    Address::from_hex(ADMIN.clone()).unwrap(),
+            addr:    Address::from_hex(<&str>::clone(&ADMIN)).unwrap(),
             balance: 10000,
         }],
         precision:  100,
@@ -478,7 +478,7 @@ fn test_check_format() {
         admin:      Address::from_hex(ADMIN).unwrap(),
         supply:     10000,
         init_mints: vec![IssuerWithBalance {
-            addr:    Address::from_hex(ADMIN.clone()).unwrap(),
+            addr:    Address::from_hex(<&str>::clone(&ADMIN)).unwrap(),
             balance: 10000,
         }],
         precision:  100,
@@ -493,7 +493,7 @@ fn test_check_format() {
         admin:      Address::from_hex(ADMIN).unwrap(),
         supply:     10000,
         init_mints: vec![IssuerWithBalance {
-            addr:    Address::from_hex(ADMIN.clone()).unwrap(),
+            addr:    Address::from_hex(<&str>::clone(&ADMIN)).unwrap(),
             balance: 10000,
         }],
         precision:  100,
