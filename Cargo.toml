@@ -5,10 +5,10 @@ authors = ["Muta Dev <muta@nervos.org>"]
 edition = "2018"
 
 [dependencies]
-muta = { git = "https://github.com/nervosnetwork/muta", tag = "v0.2.0-dev.2"}
-protocol = { git = "https://github.com/nervosnetwork/muta", tag = "v0.2.0-dev.2", package = "muta-protocol" }
-authorization = { git = "https://github.com/nervosnetwork/muta", tag = "v0.2.0-dev.2"}
-multi-signature = { git = "https://github.com/nervosnetwork/muta", tag = "v0.2.0-dev.2"}
+muta = { git = "https://github.com/nervosnetwork/muta", tag = "v0.2.0-alpha.1"}
+protocol = { git = "https://github.com/nervosnetwork/muta", tag = "v0.2.0-alpha.1", package = "muta-protocol" }
+authorization = { git = "https://github.com/nervosnetwork/muta", tag = "v0.2.0-alpha.1"}
+multi-signature = { git = "https://github.com/nervosnetwork/muta", tag = "v0.2.0-alpha.1"}
 
 derive_more = "0.99"
 tokio = { version = "0.2", features = ["macros", "rt-core", "rt-util"]}
@@ -30,7 +30,7 @@ toml = "0.5"
 lazy_static = "1.4"
 muta-codec-derive = "0.2"
 rlp = "0.4"
-framework = { git = "https://github.com/nervosnetwork/muta", tag = "v0.2.0-dev.2"}
+framework = { git = "https://github.com/nervosnetwork/muta", tag = "v0.2.0-alpha.1"}
 serde_json = "1.0"
 serde = "1.0"
 
