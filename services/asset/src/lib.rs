@@ -137,11 +137,11 @@ impl<SDK: ServiceSDK> AssetService<SDK> {
     #[cycles(10_000)]
     #[read]
     fn get_admin(&self, ctx: ServiceContext, asset_id: Hash) -> ServiceResponse<Address> {
-        require_asset_exists!(self, asset_id);
-
-        // It is impossible to panic!
-        let ret = self.assets.get(&asset_id).unwrap().admin;
-        ServiceResponse::from_succeed(ret)
+        if let Some(asset) = self.assets.get(&asset_id) {
+            ServiceResponse::from_succeed(asset.admin)
+        } else {
+            ServiceError::AssetNotFound(asset_id).into()
+        }
     }
 
     #[cycles(100_00)]
