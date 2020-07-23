@@ -46,7 +46,7 @@ macro_rules! require_admin {
                 return ServiceError::NonAuthorized.into();
             }
         } else {
-            return ServiceError::NonAuthorized.into();
+            return ServiceError::CannotGetAdmin.into();
         }
     };
 }
