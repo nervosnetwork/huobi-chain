@@ -3,8 +3,8 @@
 # Declare variables to be passed into your templates.
 replicaCount: 1
 image:
-  repository: draft
-  tag: dev
+  repository: docker.io/nervosnetwork/huobi-chain
+  tag: 0.5.2
   pullPolicy: IfNotPresent
 
 # define environment variables here as a map of key: value
