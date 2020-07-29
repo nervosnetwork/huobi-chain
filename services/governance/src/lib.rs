@@ -20,10 +20,11 @@ use protocol::traits::{ExecutorParams, ServiceResponse, ServiceSDK, StoreMap};
 use protocol::types::{Address, Metadata, ServiceContext, ServiceContextParams};
 
 use crate::types::{
-    AccumulateProfitPayload, DiscountLevel, GovernanceInfo, InitGenesisPayload, MinerChargeConfig,
-    RecordProfitEvent, SetAdminEvent, SetAdminPayload, SetGovernInfoEvent, SetGovernInfoPayload,
-    SetMinerEvent, UpdateIntervalEvent, UpdateIntervalPayload, UpdateMetadataEvent,
-    UpdateRatioEvent, UpdateRatioPayload, UpdateValidatorsEvent, UpdateValidatorsPayload,
+    AccumulateProfitPayload, ConsumedTxFee, DiscountLevel, GovernanceInfo, InitGenesisPayload,
+    MinerChargeConfig, RecordProfitEvent, SetAdminEvent, SetAdminPayload, SetGovernInfoEvent,
+    SetGovernInfoPayload, SetMinerEvent, UpdateIntervalEvent, UpdateIntervalPayload,
+    UpdateMetadataEvent, UpdateRatioEvent, UpdateRatioPayload, UpdateValidatorsEvent,
+    UpdateValidatorsPayload,
 };
 use std::convert::{From, TryInto};
 

@@ -634,7 +634,7 @@ fn test_hook_transfer_from_emit_no_event() {
     };
 
     let admin = TestService::admin();
-    service.hook_transfer_from(ctx.clone(), HookTransferFromPayload {
+    service.hook_transfer_from_(ctx.clone(), HookTransferFromPayload {
         sender:    admin.clone(),
         recipient: recipient.clone(),
         value:     24,
