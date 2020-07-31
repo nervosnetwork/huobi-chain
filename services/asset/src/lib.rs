@@ -56,7 +56,7 @@ macro_rules! get_native_asset {
     }};
 }
 
-macro_rules! impl_assets {
+macro_rules! impl_interface {
     ($self: expr, $method: ident, $ctx: expr) => {{
         let res = $self.$method($ctx.clone());
         if res.is_error() {
@@ -75,10 +75,10 @@ macro_rules! impl_assets {
     }};
 }
 
-pub trait Assets {
-    fn native_asset(&self, ctx: &ServiceContext) -> Result<Asset, ServiceResponse<()>>;
+pub trait AssetInterface {
+    fn native_asset_(&self, ctx: &ServiceContext) -> Result<Asset, ServiceResponse<()>>;
 
-    fn balance(
+    fn balance_(
         &self,
         ctx: &ServiceContext,
         payload: GetBalancePayload,
@@ -122,17 +122,17 @@ impl<SDK: ServiceSDK> DerefMut for AssetService<SDK> {
     }
 }
 
-impl<SDK: ServiceSDK> Assets for AssetService<SDK> {
-    fn native_asset(&self, ctx: &ServiceContext) -> Result<Asset, ServiceResponse<()>> {
-        impl_assets!(self, get_native_asset, ctx)
+impl<SDK: ServiceSDK> AssetInterface for AssetService<SDK> {
+    fn native_asset_(&self, ctx: &ServiceContext) -> Result<Asset, ServiceResponse<()>> {
+        impl_interface!(self, get_native_asset, ctx)
     }
 
-    fn balance(
+    fn balance_(
         &self,
         ctx: &ServiceContext,
         payload: GetBalancePayload,
     ) -> Result<GetBalanceResponse, ServiceResponse<()>> {
-        impl_assets!(self, get_balance, ctx, payload)
+        impl_interface!(self, get_balance, ctx, payload)
     }
 
     fn transfer_(
@@ -140,7 +140,7 @@ impl<SDK: ServiceSDK> Assets for AssetService<SDK> {
         ctx: &ServiceContext,
         payload: TransferPayload,
     ) -> Result<(), ServiceResponse<()>> {
-        impl_assets!(self, transfer, ctx, payload)
+        impl_interface!(self, transfer, ctx, payload)
     }
 
     fn transfer_from_(
@@ -148,7 +148,7 @@ impl<SDK: ServiceSDK> Assets for AssetService<SDK> {
         ctx: &ServiceContext,
         payload: TransferFromPayload,
     ) -> Result<(), ServiceResponse<()>> {
-        impl_assets!(self, transfer_from, ctx, payload)
+        impl_interface!(self, transfer_from, ctx, payload)
     }
 
     fn hook_transfer_from_(
@@ -156,7 +156,7 @@ impl<SDK: ServiceSDK> Assets for AssetService<SDK> {
         ctx: &ServiceContext,
         payload: HookTransferFromPayload,
     ) -> Result<(), ServiceResponse<()>> {
-        impl_assets!(self, hook_transfer_from, ctx, payload)
+        impl_interface!(self, hook_transfer_from, ctx, payload)
     }
 }
 

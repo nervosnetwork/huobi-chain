@@ -3,7 +3,7 @@ mod tests;
 mod types;
 
 use asset::types::GetBalancePayload;
-use asset::Assets;
+use asset::AssetInterface;
 use binding_macro::{cycles, genesis, service, write};
 use derive_more::Display;
 use governance::Governance;
@@ -48,8 +48,39 @@ macro_rules! sub_cycles {
     };
 }
 
-pub trait AdmissionControl {
-    fn is_allowed(&self, ctx: &ServiceContext, payload: SignedTransaction) -> bool;
+macro_rules! impl_interface {
+    ($self: expr, $method: ident, $ctx: expr) => {{
+        let res = $self.$method($ctx.clone());
+        if res.is_error() {
+            Err(ServiceResponse::from_error(res.code, res.error_message))
+        } else {
+            Ok(res.succeed_data)
+        }
+    }};
+    ($self: expr, $method: ident, $ctx: expr, $payload: expr) => {{
+        let res = $self.$method($ctx.clone(), $payload);
+        if res.is_error() {
+            Err(ServiceResponse::from_error(res.code, res.error_message))
+        } else {
+            Ok(res.succeed_data)
+        }
+    }};
+}
+
+pub trait AdmissionControlInterface {
+    fn is_allowed_(&self, ctx: &ServiceContext, payload: SignedTransaction) -> bool;
+
+    fn forbid_(
+        &mut self,
+        ctx: &ServiceContext,
+        payload: AddressList,
+    ) -> Result<(), ServiceResponse<()>>;
+
+    fn permit_(
+        &mut self,
+        ctx: &ServiceContext,
+        payload: AddressList,
+    ) -> Result<(), ServiceResponse<()>>;
 }
 
 #[derive(Debug, Display)]
@@ -106,22 +137,38 @@ pub struct AdmissionControlService<A, G, SDK> {
     governance: G,
 }
 
-impl<A, G, SDK> AdmissionControl for AdmissionControlService<A, G, SDK>
+impl<A, G, SDK> AdmissionControlInterface for AdmissionControlService<A, G, SDK>
 where
-    A: Assets,
+    A: AssetInterface,
     G: Governance,
     SDK: ServiceSDK + 'static,
 {
-    fn is_allowed(&self, ctx: &ServiceContext, payload: SignedTransaction) -> bool {
+    fn is_allowed_(&self, ctx: &ServiceContext, payload: SignedTransaction) -> bool {
         (!self.is_permitted(ctx.clone(), payload.clone()).is_error())
             && (!self.is_valid(ctx.clone(), payload).is_error())
+    }
+
+    fn forbid_(
+        &mut self,
+        ctx: &ServiceContext,
+        payload: AddressList,
+    ) -> Result<(), ServiceResponse<()>> {
+        impl_interface!(self, forbid, ctx, payload)
+    }
+
+    fn permit_(
+        &mut self,
+        ctx: &ServiceContext,
+        payload: AddressList,
+    ) -> Result<(), ServiceResponse<()>> {
+        impl_interface!(self, permit, ctx, payload)
     }
 }
 
 #[service]
 impl<A, G, SDK> AdmissionControlService<A, G, SDK>
 where
-    A: Assets,
+    A: AssetInterface,
     G: Governance,
     SDK: ServiceSDK + 'static,
 {
@@ -180,7 +227,7 @@ where
             Err(e) => return e,
         };
 
-        let failure_fee = match self.governance.get_info(&ctx) {
+        let failure_fee = match self.governance.get_info_(&ctx) {
             Ok(info) => info.tx_failure_fee,
             Err(e) => return e,
         };
@@ -247,8 +294,8 @@ where
         ctx: &ServiceContext,
         caller: &Address,
     ) -> Result<u64, ServiceResponse<()>> {
-        let asset_id = self.asset.native_asset(&ctx)?.id;
-        let native_account = self.asset.balance(&ctx, GetBalancePayload {
+        let asset_id = self.asset.native_asset_(&ctx)?.id;
+        let native_account = self.asset.balance_(&ctx, GetBalancePayload {
             asset_id,
             user: caller.clone(),
         })?;

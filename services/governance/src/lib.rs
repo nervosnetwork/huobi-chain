@@ -10,12 +10,12 @@ use derive_more::{Display, From};
 use serde::Serialize;
 
 use asset::types::{Asset, HookTransferFromPayload};
-use asset::Assets;
+use asset::AssetInterface;
 use binding_macro::{
     cycles, genesis, hook_after, hook_before, service, tx_hook_after, tx_hook_before,
 };
 use metadata::types::UpdateMetadataPayload;
-use metadata::MetaData;
+use metadata::MetadataInterface;
 use protocol::traits::{ExecutorParams, ServiceResponse, ServiceSDK, StoreMap};
 use protocol::types::{Address, Metadata, ServiceContext, ServiceContextParams};
 
@@ -55,7 +55,7 @@ macro_rules! get_info {
     }};
 }
 
-macro_rules! impl_governance {
+macro_rules! impl_interface {
     ($self: expr, $method: ident, $ctx: expr) => {{
         let res = $self.$method($ctx.clone());
         if res.is_error() {
@@ -75,9 +75,9 @@ macro_rules! impl_governance {
 }
 
 pub trait Governance {
-    fn get_info(&self, ctx: &ServiceContext) -> Result<GovernanceInfo, ServiceResponse<()>>;
+    fn get_info_(&self, ctx: &ServiceContext) -> Result<GovernanceInfo, ServiceResponse<()>>;
 
-    fn declare_profit(
+    fn declare_profit_(
         &mut self,
         ctx: &ServiceContext,
         payload: AccumulateProfitPayload,
@@ -95,28 +95,28 @@ pub struct GovernanceService<A, M, SDK> {
 
 impl<A, M, SDK> Governance for GovernanceService<A, M, SDK>
 where
-    A: Assets,
-    M: MetaData,
+    A: AssetInterface,
+    M: MetadataInterface,
     SDK: ServiceSDK,
 {
-    fn get_info(&self, ctx: &ServiceContext) -> Result<GovernanceInfo, ServiceResponse<()>> {
-        impl_governance!(self, get_govern_info, ctx)
+    fn get_info_(&self, ctx: &ServiceContext) -> Result<GovernanceInfo, ServiceResponse<()>> {
+        impl_interface!(self, get_govern_info, ctx)
     }
 
-    fn declare_profit(
+    fn declare_profit_(
         &mut self,
         ctx: &ServiceContext,
         payload: AccumulateProfitPayload,
     ) -> Result<(), ServiceResponse<()>> {
-        impl_governance!(self, accumulate_profit, ctx, payload)
+        impl_interface!(self, accumulate_profit, ctx, payload)
     }
 }
 
 #[service]
 impl<A, M, SDK> GovernanceService<A, M, SDK>
 where
-    A: Assets,
-    M: MetaData,
+    A: AssetInterface,
+    M: MetadataInterface,
     SDK: ServiceSDK,
 {
     pub fn new(mut sdk: SDK, asset: A, metadata: M) -> Self {
@@ -621,7 +621,7 @@ where
 
         let balance = self
             .asset
-            .balance(ctx, GetBalancePayload {
+            .balance_(ctx, GetBalancePayload {
                 asset_id: asset.id,
                 user:     ctx.get_caller(),
             })
@@ -637,7 +637,7 @@ where
     }
 
     fn get_metadata(&self, ctx: &ServiceContext) -> Result<Metadata, ServiceResponse<()>> {
-        self.metadata.get(ctx)
+        self.metadata.get_(ctx)
     }
 
     fn write_metadata(
@@ -645,7 +645,7 @@ where
         ctx: &ServiceContext,
         payload: UpdateMetadataPayload,
     ) -> Result<(), ServiceResponse<()>> {
-        self.metadata.update(ctx, payload)
+        self.metadata.update_(ctx, payload)
     }
 
     fn hook_transfer_from(
@@ -657,7 +657,7 @@ where
     }
 
     fn get_native_asset(&self, ctx: &ServiceContext) -> Result<Asset, ServiceResponse<()>> {
-        self.asset.native_asset(ctx)
+        self.asset.native_asset_(ctx)
     }
 
     fn emit_event<T: Serialize>(

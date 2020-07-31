@@ -38,12 +38,12 @@ impl Validate for NewAdmin {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct AddressList {
     pub addrs: Vec<Address>,
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Default)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Default)]
 pub struct StatusList {
     pub status: Vec<bool>,
 }

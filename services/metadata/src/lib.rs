@@ -13,7 +13,7 @@ use crate::types::UpdateMetadataPayload;
 
 static ADMISSION_TOKEN: Bytes = Bytes::from_static(b"governance");
 
-macro_rules! impl_metadata {
+macro_rules! impl_interface {
     ($self: expr, $method: ident, $ctx: expr) => {{
         let res = $self.$method($ctx.clone());
         if res.is_error() {
@@ -32,10 +32,10 @@ macro_rules! impl_metadata {
     }};
 }
 
-pub trait MetaData {
-    fn get(&self, ctx: &ServiceContext) -> Result<Metadata, ServiceResponse<()>>;
+pub trait MetadataInterface {
+    fn get_(&self, ctx: &ServiceContext) -> Result<Metadata, ServiceResponse<()>>;
 
-    fn update(
+    fn update_(
         &mut self,
         ctx: &ServiceContext,
         payload: UpdateMetadataPayload,
@@ -46,17 +46,17 @@ pub struct MetadataService<SDK> {
     sdk: SDK,
 }
 
-impl<SDK: ServiceSDK> MetaData for MetadataService<SDK> {
-    fn get(&self, ctx: &ServiceContext) -> Result<Metadata, ServiceResponse<()>> {
-        impl_metadata!(self, get_metadata, ctx)
+impl<SDK: ServiceSDK> MetadataInterface for MetadataService<SDK> {
+    fn get_(&self, ctx: &ServiceContext) -> Result<Metadata, ServiceResponse<()>> {
+        impl_interface!(self, get_metadata, ctx)
     }
 
-    fn update(
+    fn update_(
         &mut self,
         ctx: &ServiceContext,
         payload: UpdateMetadataPayload,
     ) -> Result<(), ServiceResponse<()>> {
-        impl_metadata!(self, update_metadata, ctx, payload)
+        impl_interface!(self, update_metadata, ctx, payload)
     }
 }
 

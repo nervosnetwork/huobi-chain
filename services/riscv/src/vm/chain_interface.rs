@@ -1,6 +1,6 @@
 use crate::{common, types::ExecPayload, ServiceError};
 
-use asset::Assets;
+use asset::AssetInterface;
 use protocol::{
     traits::{ServiceResponse, ServiceSDK},
     types::{Address, Hash, ServiceContext},
@@ -65,7 +65,7 @@ pub struct WriteableChain<A, SDK> {
 
 impl<A, SDK> WriteableChain<A, SDK>
 where
-    A: Assets,
+    A: AssetInterface,
     SDK: ServiceSDK + 'static,
 {
     pub fn new(
@@ -111,7 +111,7 @@ where
 
 impl<A, SDK> ChainInterface for WriteableChain<A, SDK>
 where
-    A: Assets,
+    A: AssetInterface,
     SDK: ServiceSDK + 'static,
 {
     fn get_storage(&self, key: &Bytes) -> Bytes {
@@ -154,7 +154,7 @@ where
         let mut cycle_ctx = CycleContext::new(self.ctx.clone(), self.all_cycles_used);
 
         let resp = Self::serve(&mut cycle_ctx, current_cycle, || -> _ {
-            match self.asset.borrow().native_asset(&self.ctx) {
+            match self.asset.borrow().native_asset_(&self.ctx) {
                 Ok(_) => ServiceResponse::from_succeed("asset".to_owned()),
                 Err(e) => ServiceResponse::from_error(e.code, e.error_message),
             }
@@ -174,7 +174,7 @@ where
         let mut cycle_ctx = CycleContext::new(self.ctx.clone(), self.all_cycles_used);
 
         let resp = Self::serve(&mut cycle_ctx, current_cycle, || -> _ {
-            match self.asset.borrow().native_asset(&self.ctx) {
+            match self.asset.borrow().native_asset_(&self.ctx) {
                 Ok(_) => ServiceResponse::from_succeed("asset".to_owned()),
                 Err(e) => ServiceResponse::from_error(e.code, e.error_message),
             }
@@ -191,7 +191,7 @@ pub struct ReadonlyChain<A, SDK> {
 
 impl<A, SDK> ReadonlyChain<A, SDK>
 where
-    A: Assets,
+    A: AssetInterface,
     SDK: ServiceSDK + 'static,
 {
     pub fn new(
@@ -208,7 +208,7 @@ where
 
 impl<A, SDK> ChainInterface for ReadonlyChain<A, SDK>
 where
-    A: Assets,
+    A: AssetInterface,
     SDK: ServiceSDK + 'static,
 {
     fn get_storage(&self, key: &Bytes) -> Bytes {
